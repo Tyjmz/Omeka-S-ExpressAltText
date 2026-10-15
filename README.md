@@ -83,6 +83,14 @@ These observations were reported and documented in screenshots in the developmen
 7. Test unsaved navigation warning, paging, and the empty filter after saving descriptions.
 8. If errors occur, capture the Omeka/PHP error log and restore from backup.
 
+## v1.1.2 diagnostic patch (October 15, 2026)
+
+- Adds phase-specific PHP error logging, including exception class, exact message (including missing service), file, line and stack trace. Look in the hosting PHP error log for `ExpressAltText v1.1.2` if Omeka's Logs does not record it.
+- Removes the `flashMessenger()` invocation from the successful POST path as a potential source of the save-time `ServiceNotFoundException`. **This is a hypothesis, not a confirmed root cause.** The save result is displayed immediately without a redirect; avoid refreshing a POST response (navigate back to the module instead).
+- Keeps the existing CSRF validator, native media API writes, human review controls, progress dashboard, image previews, and back-to-dashboard link.
+- **Unverified on a running Omeka S site.** Do not use for bulk production edits until a single-media save and review-only save have been tested on staging.
+- The separately observed `PermissionDeniedException` for `/api/users/1` has not been shown to originate in this module.
+
 ## History
 
 - **1.0.0:** Initial admin gallery (route and save issues discovered).
@@ -91,3 +99,5 @@ These observations were reported and documented in screenshots in the developmen
 - **1.0.3:** Original-image preview preference and full-image links; preview behavior not independently verified.
 - **1.1.0:** Review status, progress, search, filters, modified-record indicators, save safety improvements.
 - **1.1.1:** CSRF validator clarification, separate review-storage error reporting, admin dashboard back link.
+
+- **1.1.2:** Diagnostic logging for save phases; removed potential flash-messenger service lookup during POST.

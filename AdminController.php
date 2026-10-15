@@ -23,6 +23,20 @@ class AdminController extends AbstractActionController
         $this->settings = $settings;
     }
 
+    /** Log the exception's origin, missing service name, and short trace. */
+    private function logSaveException(\Throwable $e, $phase)
+    {
+        error_log(sprintf(
+            'ExpressAltText v1.1.2 [%s]: %s: %s at %s:%d\n%s',
+            $phase,
+            get_class($e),
+            $e->getMessage(),
+            $e->getFile(),
+            $e->getLine(),
+            $e->getTraceAsString()
+        ));
+    }
+
     public function indexAction()
     {
         if (!$this->auth->getIdentity()) {
@@ -48,11 +62,14 @@ class AdminController extends AbstractActionController
         }
 
         if ($request->isPost()) {
+            $savePhase = 'request validation';
             try {
                 $post = $request->getPost();
+                $savePhase = 'CSRF validation';
                 if (!$csrf->isValid((string) $post->get('express_csrf', ''))) {
                     $error = 'Security token expired. Reload the page and try again.';
                 } else {
+                    $savePhase = 'batch input validation';
                     $entries = $post->get('alt_texts', []);
                     $reviewEntries = $post->get('reviewed', []);
                     $originalEntries = $post->get('original_alts', []);
@@ -62,6 +79,7 @@ class AdminController extends AbstractActionController
                         $saved = 0;
                         $reviewsChanged = 0;
                         foreach ($entries as $key => $value) {
+                            $savePhase = 'processing media ' . (string) $key;
                             $id = filter_var($key, FILTER_VALIDATE_INT);
                             if (!$id || !is_scalar($value)) {
                                 $failures[] = (string) $key;
@@ -91,7 +109,7 @@ class AdminController extends AbstractActionController
                                     unset($submitted[$id]);
                                     unset($reviewed[(string) $id]); // Edited text must be reviewed again.
                                 } catch (\Throwable $e) {
-                                    error_log('ExpressAltText save failed for media ' . $id . ': ' . $e->getMessage());
+                                    $this->logSaveException($e, 'native media API update for media ' . $id);
                                     $failures[] = (string) $id;
                                     continue;
                                 }
@@ -110,11 +128,12 @@ class AdminController extends AbstractActionController
                         }
                         // Review bookkeeping is independent from native media writes.
                         // A settings failure must not conceal successful alt-text saves.
+                        $savePhase = 'review settings persistence';
                         if ($reviewsChanged || $saved) {
                             try {
                                 $this->settings->set('express_alt_text_reviews', $reviewed);
                             } catch (\Throwable $e) {
-                                error_log('ExpressAltText review settings save failed: ' . $e->getMessage());
+                                $this->logSaveException($e, 'review settings persistence');
                                 $error = 'Alt-text changes may have saved, but review status could not be stored. Check the server error log.';
                                 $failures[] = 'review status';
                             }
@@ -123,15 +142,14 @@ class AdminController extends AbstractActionController
                         if ($failures) {
                             $error = 'Some operations failed: ' . implode(', ', $failures) . '. Review the affected records before continuing.';
                         } elseif ($saved || $reviewsChanged) {
-                            // Redirect to the same page, avoiding duplicate POST on refresh.
-                            $this->flashMessenger()->addSuccessMessage($notice);
-                            return $this->redirect()->toRoute('express-alt-text-dashboard', [], ['query' => ['page' => $page, 'filter' => $filter, 'search' => $search]]);
+                            // Show the result in this response: no flash-messenger service lookup.
+                            // Refreshing may ask to resubmit; do not confirm a second submission.
                         }
                     }
                 }
             } catch (\Throwable $e) {
-                error_log('ExpressAltText batch request failed: ' . $e->getMessage());
-                $error = 'Could not process the save request. No further changes should be attempted until the error is checked. Details: ' . get_class($e) . ' (see server log).';
+                $this->logSaveException($e, $savePhase);
+                $error = 'Could not process the save request during ' . $savePhase . '. Details: ' . get_class($e) . '. Check the PHP error log for the exact missing service and source line.';
             }
         }
 
