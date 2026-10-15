@@ -1,0 +1,84 @@
+<?php
+$this->headLink()->appendStylesheet($this->assetUrl('css/express.css', 'ExpressAltText'));
+$this->htmlElement('body')->appendAttribute('class', 'express-alt-text');
+$this->headTitle('Express Alt Text');
+$esc = function ($s) { return htmlspecialchars((string) $s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); };
+?>
+<h1>Express Alt Text</h1>
+<p>Review image media and edit Omeka S native alt text. Edit several descriptions, then select Save All Changes.</p>
+<?php if ($notice): ?><p class="express-notice" role="status"><?= $esc($notice) ?></p><?php endif; ?>
+<?php if ($error): ?><p class="express-error" role="alert"><?= $esc($error) ?></p><?php endif; ?>
+<nav class="express-filters" aria-label="Filter images">
+<?php foreach (['all'=>'All images', 'missing'=>'Empty alt text', 'filled'=>'With alt text'] as $key=>$label): ?>
+<a <?= $filter === $key ? 'aria-current="page"' : '' ?> href="<?= $esc($this->url('express-alt-text-dashboard', [], ['query'=>['filter'=>$key]])) ?>"><?= $esc($label) ?></a>
+<?php endforeach; ?>
+</nav>
+<p class="express-hint">Empty alt text may be appropriate for decorative images. This page shows 30 media records at a time. Save changes before changing pages or filters.</p>
+<form id="express-batch-form" method="post" action="<?= $esc($this->url('express-alt-text-dashboard', [], ['query'=>['page'=>$page, 'filter'=>$filter]])) ?>">
+<input type="hidden" name="express_csrf" value="<?= $esc($csrf->getHash()) ?>">
+<div class="express-toolbar"><button type="submit">Save All Changes on This Page</button><span id="express-changes" aria-live="polite">Changes are not saved until you press Save All Changes.</span></div>
+<div class="express-list">
+<?php foreach ($mediaList as $media): ?>
+<article class="express-card">
+<div class="express-preview">
+<?php
+$representation = null;
+$original = null;
+$medium = null;
+try {
+    $representation = $this->api()->read('media', $media->getId())->getContent();
+    // Some Omeka installations have originals but no generated derivatives.
+    // thumbnailUrl('medium') can return a generic placeholder in that case.
+    if (method_exists($representation, 'originalUrl')) {
+        $original = $representation->originalUrl();
+    }
+    $medium = $representation->thumbnailUrl('medium');
+} catch (\Throwable $e) {
+    error_log('ExpressAltText preview failed for media ' . $media->getId() . ': ' . $e->getMessage());
+}
+// Prefer the actual original for image media, never Omeka's generic thumbnail icon.
+// The browser scales the image to fit; it does not change the original file.
+$preview = $original ?: $medium;
+?>
+<?php if ($preview): ?>
+<a class="express-image-link" href="<?= $esc($original ?: $preview) ?>" target="_blank" rel="noopener noreferrer" aria-label="Open full image for media #<?= (int) $media->getId() ?> in a new tab">
+<img src="<?= $esc($preview) ?>" alt="" loading="lazy" decoding="async"<?php if ($medium && $medium !== $preview): ?> data-fallback-src="<?= $esc($medium) ?>"<?php endif; ?> onerror="if(this.dataset.fallbackSrc){this.src=this.dataset.fallbackSrc;delete this.dataset.fallbackSrc;}else{this.hidden=true;this.parentNode.querySelector('.express-no-preview').hidden=false;}">
+<span class="express-no-preview" hidden>Image preview unavailable</span>
+</a>
+<span class="express-enlarge">Open full image ↗</span>
+<?php else: ?><span class="express-no-preview">No preview available</span><?php endif; ?>
+</div>
+<div class="express-content">
+<h2><?= $esc($representation ? ($representation->displayTitle() ?: 'Untitled image') : 'Image') ?> <small>#<?= (int) $media->getId() ?></small></h2>
+<p><a href="<?= $esc($this->url('admin/id', ['controller'=>'media', 'id'=>$media->getId()])) ?>">Open media record</a></p>
+<label for="alt-<?= (int) $media->getId() ?>">Alt text for image #<?= (int) $media->getId() ?></label>
+<textarea id="alt-<?= (int) $media->getId() ?>" name="alt_texts[<?= (int) $media->getId() ?>]" rows="3" maxlength="10000"><?= $esc(array_key_exists($media->getId(), $submitted) ? $submitted[$media->getId()] : $media->getAltText()) ?></textarea>
+<p class="express-help">Leave empty only when appropriate for the image's context.</p>
+</div>
+</article>
+<?php endforeach; ?>
+<?php if (!$mediaList): ?><p>No images found on this page.</p><?php endif; ?>
+</div>
+<div class="express-toolbar express-bottom"><button type="submit">Save All Changes on This Page</button></div>
+</form>
+<nav class="express-pagination" aria-label="Image pages">
+<?php if ($page > 1): ?><a href="<?= $esc($this->url('express-alt-text-dashboard', [], ['query'=>['page'=>$page-1,'filter'=>$filter]])) ?>">Previous page</a><?php endif; ?>
+<span>Page <?= (int) $page ?></span>
+<?php if ($hasNext): ?><a href="<?= $esc($this->url('express-alt-text-dashboard', [], ['query'=>['page'=>$page+1,'filter'=>$filter]])) ?>">Next page</a><?php endif; ?>
+</nav>
+<script>
+(function () {
+  var form = document.getElementById('express-batch-form');
+  if (!form) return;
+  var fields = Array.prototype.slice.call(form.querySelectorAll('textarea'));
+  var originals = fields.map(function (field) { return field.value; });
+  var status = document.getElementById('express-changes');
+  var saving = false;
+  function changed() { return fields.filter(function (field, i) { return field.value !== originals[i]; }).length; }
+  function refresh() { var n = changed(); status.textContent = n ? n + ' unsaved description(s) on this page.' : 'No unsaved changes on this page.'; }
+  fields.forEach(function (field) { field.addEventListener('input', refresh); });
+  form.addEventListener('submit', function () { saving = true; });
+  window.addEventListener('beforeunload', function (event) { if (!saving && changed()) { event.preventDefault(); event.returnValue = ''; } });
+  refresh();
+}());
+</script>
