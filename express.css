@@ -10,3 +10,16 @@
 .express-enlarge{display:block;font-size:.8rem;margin-top:.35rem}
 .express-no-preview{font-size:.85rem;padding:.8rem}
 @media(max-width:650px){.express-image-link{max-width:240px}}
+/* v1.1.0 accessibility review dashboard */
+.express-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.75rem;margin:1.25rem 0}
+.express-stats>div{background:#f3f4f5;border:1px solid #ddd;padding:1rem;display:flex;flex-direction:column;gap:.3rem}
+.express-stats strong{font-size:1.7rem}
+.express-progress-label{margin:.5rem 0;font-weight:600}
+.express-alt-text progress{width:100%;height:1rem;max-width:700px}
+.express-search{display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;margin:1.5rem 0}
+.express-search label{font-weight:600}.express-search input{min-width:230px;max-width:100%;padding:.5rem}
+.express-review{display:inline-flex!important;gap:.4rem;align-items:center!important;margin:0!important;font-weight:normal!important}
+.express-review input{margin:0}.express-status{font-weight:600}
+.express-modified{border-left:5px solid #246b93;background:#f8fbfd}
+.express-toolbar button:disabled{opacity:.6;cursor:not-allowed}
+@media(max-width:700px){.express-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}

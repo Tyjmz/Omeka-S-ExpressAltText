@@ -3,82 +3,149 @@ $this->headLink()->appendStylesheet($this->assetUrl('css/express.css', 'ExpressA
 $this->htmlElement('body')->appendAttribute('class', 'express-alt-text');
 $this->headTitle('Express Alt Text');
 $esc = function ($s) { return htmlspecialchars((string) $s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); };
+$urlFor = function ($p, $f) use ($search) {
+    return $this->url('express-alt-text-dashboard', [], ['query' => ['page' => $p, 'filter' => $f, 'search' => $search]]);
+};
 ?>
 <h1>Express Alt Text</h1>
-<p>Review image media and edit Omeka S native alt text. Edit several descriptions, then select Save All Changes.</p>
+<p>Review image media, edit native Omeka S alt text, and save your changes together. Review status is tracked separately from media metadata.</p>
 <?php if ($notice): ?><p class="express-notice" role="status"><?= $esc($notice) ?></p><?php endif; ?>
 <?php if ($error): ?><p class="express-error" role="alert"><?= $esc($error) ?></p><?php endif; ?>
+<section class="express-stats" aria-label="Alt text progress">
+  <div><span>Total images</span><strong><?= (int) $counts['all'] ?></strong></div>
+  <div><span>Empty alt text</span><strong><?= (int) $counts['missing'] ?></strong></div>
+  <div><span>With alt text</span><strong><?= (int) $counts['filled'] ?></strong></div>
+  <div><span>Human reviewed</span><strong><?= (int) $counts['reviewed'] ?></strong></div>
+</section>
+<?php $percent = $counts['all'] ? round(100 * $counts['reviewed'] / $counts['all']) : 0; ?>
+<div class="express-progress-label">Human review progress: <?= (int) $percent ?>%</div>
+<progress max="100" value="<?= (int) $percent ?>" aria-label="Percentage of images reviewed"><?= (int) $percent ?>%</progress>
+<form method="get" action="<?= $esc($this->url('express-alt-text-dashboard')) ?>" class="express-search" role="search">
+  <label for="express-search-field">Search media ID or existing alt text</label>
+  <input id="express-search-field" name="search" type="search" value="<?= $esc($search) ?>" maxlength="150" placeholder="Media ID or words in alt text">
+  <input type="hidden" name="filter" value="<?= $esc($filter) ?>">
+  <button type="submit">Search</button>
+  <?php if ($search !== ''): ?><a href="<?= $esc($this->url('express-alt-text-dashboard', [], ['query' => ['filter' => $filter]])) ?>">Clear search</a><?php endif; ?>
+</form>
 <nav class="express-filters" aria-label="Filter images">
-<?php foreach (['all'=>'All images', 'missing'=>'Empty alt text', 'filled'=>'With alt text'] as $key=>$label): ?>
-<a <?= $filter === $key ? 'aria-current="page"' : '' ?> href="<?= $esc($this->url('express-alt-text-dashboard', [], ['query'=>['filter'=>$key]])) ?>"><?= $esc($label) ?></a>
+<?php foreach (['all'=>'All images', 'missing'=>'Empty alt text', 'filled'=>'With alt text', 'unreviewed'=>'Needs human review', 'reviewed'=>'Reviewed'] as $key=>$label): ?>
+<a <?= $filter === $key ? 'aria-current="page"' : '' ?> href="<?= $esc($urlFor(1, $key)) ?>"><?= $esc($label) ?></a>
 <?php endforeach; ?>
 </nav>
-<p class="express-hint">Empty alt text may be appropriate for decorative images. This page shows 30 media records at a time. Save changes before changing pages or filters.</p>
-<form id="express-batch-form" method="post" action="<?= $esc($this->url('express-alt-text-dashboard', [], ['query'=>['page'=>$page, 'filter'=>$filter]])) ?>">
+<p class="express-hint">Showing <?= count($mediaList) ?> of <?= (int) $totalMatching ?> matching image records, 30 per page. Empty alt text can be appropriate for decorative images; those need contextual review. Save before changing pages or filters.</p>
+<form id="express-batch-form" method="post" action="<?= $esc($urlFor($page, $filter)) ?>">
 <input type="hidden" name="express_csrf" value="<?= $esc($csrf->getHash()) ?>">
-<div class="express-toolbar"><button type="submit">Save All Changes on This Page</button><span id="express-changes" aria-live="polite">Changes are not saved until you press Save All Changes.</span></div>
+<div class="express-toolbar"><button type="submit" class="express-save">Save All Changes on This Page</button><span id="express-changes" role="status" aria-live="polite">Checking changes...</span></div>
 <div class="express-list">
 <?php foreach ($mediaList as $media): ?>
-<article class="express-card">
-<div class="express-preview">
 <?php
+$id = (int) $media->getId();
 $representation = null;
 $original = null;
 $medium = null;
 try {
-    $representation = $this->api()->read('media', $media->getId())->getContent();
-    // Some Omeka installations have originals but no generated derivatives.
-    // thumbnailUrl('medium') can return a generic placeholder in that case.
+    $representation = $this->api()->read('media', $id)->getContent();
     if (method_exists($representation, 'originalUrl')) {
         $original = $representation->originalUrl();
     }
     $medium = $representation->thumbnailUrl('medium');
 } catch (\Throwable $e) {
-    error_log('ExpressAltText preview failed for media ' . $media->getId() . ': ' . $e->getMessage());
+    error_log('ExpressAltText preview failed for media ' . $id . ': ' . $e->getMessage());
 }
-// Prefer the actual original for image media, never Omeka's generic thumbnail icon.
-// The browser scales the image to fit; it does not change the original file.
 $preview = $original ?: $medium;
+$currentAlt = array_key_exists($id, $submitted) ? $submitted[$id] : (string) $media->getAltText();
+$isReviewed = trim($currentAlt) !== '' && isset($reviewed[(string) $id]);
 ?>
+<article class="express-card" data-media-id="<?= $id ?>">
+<div class="express-preview">
 <?php if ($preview): ?>
-<a class="express-image-link" href="<?= $esc($original ?: $preview) ?>" target="_blank" rel="noopener noreferrer" aria-label="Open full image for media #<?= (int) $media->getId() ?> in a new tab">
-<img src="<?= $esc($preview) ?>" alt="" loading="lazy" decoding="async"<?php if ($medium && $medium !== $preview): ?> data-fallback-src="<?= $esc($medium) ?>"<?php endif; ?> onerror="if(this.dataset.fallbackSrc){this.src=this.dataset.fallbackSrc;delete this.dataset.fallbackSrc;}else{this.hidden=true;this.parentNode.querySelector('.express-no-preview').hidden=false;}">
+<a class="express-image-link" href="<?= $esc($original ?: $preview) ?>" target="_blank" rel="noopener noreferrer" aria-label="Open full image for media #<?= $id ?> in a new tab">
+<img src="<?= $esc($preview) ?>" alt="" loading="lazy" decoding="async"<?php if ($medium && $medium !== $preview): ?> data-fallback-src="<?= $esc($medium) ?>"<?php endif; ?>>
 <span class="express-no-preview" hidden>Image preview unavailable</span>
 </a>
-<span class="express-enlarge">Open full image ↗</span>
+<span class="express-enlarge">Open full image in new tab</span>
 <?php else: ?><span class="express-no-preview">No preview available</span><?php endif; ?>
 </div>
 <div class="express-content">
-<h2><?= $esc($representation ? ($representation->displayTitle() ?: 'Untitled image') : 'Image') ?> <small>#<?= (int) $media->getId() ?></small></h2>
-<p><a href="<?= $esc($this->url('admin/id', ['controller'=>'media', 'id'=>$media->getId()])) ?>">Open media record</a></p>
-<label for="alt-<?= (int) $media->getId() ?>">Alt text for image #<?= (int) $media->getId() ?></label>
-<textarea id="alt-<?= (int) $media->getId() ?>" name="alt_texts[<?= (int) $media->getId() ?>]" rows="3" maxlength="10000"><?= $esc(array_key_exists($media->getId(), $submitted) ? $submitted[$media->getId()] : $media->getAltText()) ?></textarea>
-<p class="express-help">Leave empty only when appropriate for the image's context.</p>
+<h2><?= $esc($representation ? ($representation->displayTitle() ?: 'Untitled image') : 'Image') ?> <small>#<?= $id ?></small></h2>
+<p><a href="<?= $esc($this->url('admin/id', ['controller'=>'media', 'id'=>$id])) ?>">Open media record</a></p>
+<label for="alt-<?= $id ?>">Alt text for image #<?= $id ?></label>
+<textarea id="alt-<?= $id ?>" name="alt_texts[<?= $id ?>]" rows="3" maxlength="10000"><?= $esc($currentAlt) ?></textarea>
+<input type="hidden" name="original_alts[<?= $id ?>]" value="<?= $esc((string) $media->getAltText()) ?>">
+<div class="express-actions">
+  <label class="express-review"><input type="checkbox" name="reviewed[<?= $id ?>]" value="1" <?= $isReviewed ? 'checked' : '' ?> <?= trim($currentAlt) === '' ? 'disabled' : '' ?>> Mark as human reviewed</label>
+  <span class="express-status"><?= $isReviewed ? 'Reviewed' : (trim($currentAlt) === '' ? 'Empty alt text' : 'Needs review') ?></span>
+  <span class="express-charcount" aria-live="off"><?= mb_strlen($currentAlt) ?> characters</span>
+</div>
+<p class="express-help">Review is a separate administrative status, not a guarantee of WCAG conformance. Editing a description clears its prior review status unless you review it again.</p>
 </div>
 </article>
 <?php endforeach; ?>
-<?php if (!$mediaList): ?><p>No images found on this page.</p><?php endif; ?>
+<?php if (!$mediaList): ?><p>No images match these filters. Try All images or clear your search.</p><?php endif; ?>
 </div>
-<div class="express-toolbar express-bottom"><button type="submit">Save All Changes on This Page</button></div>
+<div class="express-toolbar express-bottom"><button type="submit" class="express-save">Save All Changes on This Page</button></div>
 </form>
 <nav class="express-pagination" aria-label="Image pages">
-<?php if ($page > 1): ?><a href="<?= $esc($this->url('express-alt-text-dashboard', [], ['query'=>['page'=>$page-1,'filter'=>$filter]])) ?>">Previous page</a><?php endif; ?>
-<span>Page <?= (int) $page ?></span>
-<?php if ($hasNext): ?><a href="<?= $esc($this->url('express-alt-text-dashboard', [], ['query'=>['page'=>$page+1,'filter'=>$filter]])) ?>">Next page</a><?php endif; ?>
+<?php if ($page > 1): ?><a href="<?= $esc($urlFor($page - 1, $filter)) ?>">Previous page</a><?php endif; ?>
+<span>Page <?= (int) $page ?> of <?= (int) $totalPages ?></span>
+<?php if ($hasNext): ?><a href="<?= $esc($urlFor($page + 1, $filter)) ?>">Next page</a><?php endif; ?>
 </nav>
 <script>
 (function () {
+  'use strict';
   var form = document.getElementById('express-batch-form');
   if (!form) return;
-  var fields = Array.prototype.slice.call(form.querySelectorAll('textarea'));
-  var originals = fields.map(function (field) { return field.value; });
+  var cards = Array.prototype.slice.call(form.querySelectorAll('.express-card'));
   var status = document.getElementById('express-changes');
   var saving = false;
-  function changed() { return fields.filter(function (field, i) { return field.value !== originals[i]; }).length; }
-  function refresh() { var n = changed(); status.textContent = n ? n + ' unsaved description(s) on this page.' : 'No unsaved changes on this page.'; }
-  fields.forEach(function (field) { field.addEventListener('input', refresh); });
-  form.addEventListener('submit', function () { saving = true; });
-  window.addEventListener('beforeunload', function (event) { if (!saving && changed()) { event.preventDefault(); event.returnValue = ''; } });
+  var snapshots = cards.map(function (card) {
+    var textarea = card.querySelector('textarea');
+    var checkbox = card.querySelector('.express-review input');
+    return {alt: textarea.value, reviewed: checkbox.checked};
+  });
+  function changed() {
+    return cards.filter(function (card, i) {
+      var textarea = card.querySelector('textarea');
+      var checkbox = card.querySelector('.express-review input');
+      return textarea.value !== snapshots[i].alt || checkbox.checked !== snapshots[i].reviewed;
+    }).length;
+  }
+  function refresh() {
+    cards.forEach(function (card) {
+      var textarea = card.querySelector('textarea');
+      var checkbox = card.querySelector('.express-review input');
+      var count = card.querySelector('.express-charcount');
+      count.textContent = Array.from(textarea.value).length + ' characters';
+      checkbox.disabled = !textarea.value.trim();
+      if (checkbox.disabled) checkbox.checked = false;
+      card.classList.toggle('express-modified', textarea.value !== snapshots[cards.indexOf(card)].alt || checkbox.checked !== snapshots[cards.indexOf(card)].reviewed);
+    });
+    var n = changed();
+    status.textContent = n ? n + ' unsaved record(s) on this page.' : 'No unsaved changes on this page.';
+    Array.prototype.forEach.call(form.querySelectorAll('.express-save'), function (button) { button.disabled = n === 0; });
+  }
+  cards.forEach(function (card) {
+    card.querySelector('textarea').addEventListener('input', refresh);
+    card.querySelector('.express-review input').addEventListener('change', refresh);
+    var img = card.querySelector('img');
+    if (img) img.addEventListener('error', function () {
+      if (img.dataset.fallbackSrc) {
+        var fallback = img.dataset.fallbackSrc;
+        delete img.dataset.fallbackSrc;
+        img.src = fallback;
+      } else {
+        img.hidden = true;
+        card.querySelector('.express-no-preview').hidden = false;
+      }
+    });
+  });
+  form.addEventListener('submit', function (event) {
+    if (!changed()) { event.preventDefault(); return; }
+    saving = true;
+  });
+  window.addEventListener('beforeunload', function (event) {
+    if (!saving && changed()) { event.preventDefault(); event.returnValue = ''; }
+  });
   refresh();
 }());
 </script>

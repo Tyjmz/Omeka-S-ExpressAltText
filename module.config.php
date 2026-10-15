@@ -11,7 +11,8 @@ return [
                     $container->get('Omeka\ApiManager'),
                     $container->get('Omeka\EntityManager'),
                     $container->get('Omeka\Acl'),
-                    $container->get('Omeka\AuthenticationService')
+                    $container->get('Omeka\AuthenticationService'),
+                    $container->get('Omeka\Settings')
                 );
             },
         ],
