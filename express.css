@@ -40,3 +40,45 @@
 .express-alt-text .express-search-button:focus-visible,.express-alt-text .express-filter-button:focus-visible{outline:3px solid #efb34a;outline-offset:2px}
 .express-alt-text .express-visually-hidden{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 @media(max-width:650px){.express-alt-text .express-search{justify-content:stretch}.express-alt-text .express-search input[type="search"]{flex:1 1 180px;width:auto}.express-alt-text .express-filters{gap:.4rem}.express-alt-text .express-filter-button{white-space:normal}}
+
+/* v1.1.4: summary cards are the only filter navigation. */
+.express-alt-text .express-stats {
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:.75rem;
+  margin:1.25rem 0;
+}
+.express-alt-text .express-stat-card {
+  display:flex;
+  flex-direction:column;
+  gap:.35rem;
+  min-width:0;
+  box-sizing:border-box;
+  padding:1rem;
+  background:#f3f4f5;
+  border:1px solid #d4d9de;
+  border-radius:4px;
+  color:#263b4d;
+  text-decoration:none;
+  cursor:pointer;
+}
+.express-alt-text .express-stat-card span {font-size:.95rem;line-height:1.3}
+.express-alt-text .express-stat-card strong {font-size:1.8rem;line-height:1.2}
+.express-alt-text .express-stat-card:hover {background:#e8f1fc;border-color:#3972b4;text-decoration:none;color:#174d86}
+.express-alt-text .express-stat-card.is-active {background:#eaf2ff;border:2px solid #2162ae;padding:calc(1rem - 1px);color:#174d86}
+.express-alt-text .express-stat-card:focus-visible {outline:3px solid #bd7400;outline-offset:3px}
+/* Keep the submit button compact and immediately beside the search field. */
+.express-alt-text .express-search {display:flex;justify-content:flex-end;align-items:center;gap:.4rem;flex-wrap:nowrap}
+.express-alt-text .express-search input[type="search"] {flex:0 1 340px;width:340px;min-width:0;max-width:100%;height:36px}
+.express-alt-text .express-search-button {flex:0 0 auto;min-width:0;width:auto;height:36px;padding:.35rem .7rem;font-size:.85rem}
+@media (max-width:1050px) {
+  .express-alt-text .express-stats {grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media (max-width:650px) {
+  .express-alt-text .express-stats {grid-template-columns:repeat(2,minmax(0,1fr))}
+  .express-alt-text .express-search {justify-content:flex-start;flex-wrap:wrap}
+  .express-alt-text .express-search input[type="search"] {flex:1 1 150px;width:auto}
+}
+@media (max-width:390px) {
+  .express-alt-text .express-stats {grid-template-columns:1fr}
+}

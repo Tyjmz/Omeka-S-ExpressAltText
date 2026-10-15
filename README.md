@@ -110,3 +110,13 @@ These observations were reported and documented in screenshots in the developmen
 - Search and filter routes, CSRF handling, media API saves, review bookkeeping, and pagination are **unchanged** from v1.1.2.
 - **Testing:** Static PHP lint and archive integrity checked for this release. The user reported that the v1.1.2 save error disappeared; no independent server-side test of v1.1.3 has been performed.
 - **Suggested test:** Search for a media ID, switch each filter, clear the search, verify keyboard focus, and save one non-critical media record on staging.
+
+## v1.1.4 dashboard navigation update (October 15, 2026)
+
+- The five count cards now serve as the **only filter navigation**: Total images, Empty alt text, With alt text, Needs human review, and Reviewed. The redundant smaller filter links/buttons have been removed.
+- Each card is a normal keyboard-accessible link with an accessible name including its count. The selected card is highlighted and uses `aria-current="page"`. Counts come from the existing controller's `counts` values.
+- Search remains right-aligned on wide screens with a smaller Search button immediately next to the input. On narrow screens the layout wraps responsively.
+- Search terms are preserved when changing filters; filter changes reset to page 1.
+- **No controller, persistence, CSRF, save, or review-tracking logic was modified in this release.**
+- **Verification:** PHP lint and ZIP integrity checked locally. The interface and save workflow have not been independently tested against a live Omeka S installation for v1.1.4.
+- **Suggested staging test:** Click each count card, confirm the correct filtered records and active highlight, test search + filter together, check keyboard navigation, and save one non-critical description.
