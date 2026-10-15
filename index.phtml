@@ -8,6 +8,7 @@ $urlFor = function ($p, $f) use ($search) {
 };
 ?>
 <h1>Express Alt Text</h1>
+<p class="express-back"><a href="<?= $esc($this->url('admin')) ?>" id="express-back-dashboard">&larr; Back to Omeka S Dashboard</a></p>
 <p>Review image media, edit native Omeka S alt text, and save your changes together. Review status is tracked separately from media metadata.</p>
 <?php if ($notice): ?><p class="express-notice" role="status"><?= $esc($notice) ?></p><?php endif; ?>
 <?php if ($error): ?><p class="express-error" role="alert"><?= $esc($error) ?></p><?php endif; ?>

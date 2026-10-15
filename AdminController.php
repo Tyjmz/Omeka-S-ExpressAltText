@@ -2,7 +2,7 @@
 namespace ExpressAltText\Controller;
 
 use Laminas\Mvc\Controller\AbstractActionController;
-use Laminas\Validator\Csrf;
+use Laminas\Validator\Csrf as CsrfValidator;
 use Laminas\View\Model\ViewModel;
 use Omeka\Entity\Media;
 
@@ -28,7 +28,8 @@ class AdminController extends AbstractActionController
         if (!$this->auth->getIdentity()) {
             return $this->notFoundAction();
         }
-        $csrf = new Csrf(['name' => 'express_alt_text_csrf', 'timeout' => 3600]);
+        // Validator (not Laminas\Form\Element\Csrf): the element has no isValid() method.
+        $csrf = new CsrfValidator(['name' => 'express_alt_text_csrf', 'timeout' => 3600]);
         $request = $this->getRequest();
         $page = max(1, min(100000, (int) $this->params()->fromQuery('page', 1)));
         $filter = (string) $this->params()->fromQuery('filter', 'all');
@@ -107,10 +108,20 @@ class AdminController extends AbstractActionController
                                 $reviewsChanged++;
                             }
                         }
-                        $this->settings->set('express_alt_text_reviews', $reviewed);
-                        $notice = $saved . ' description(s) saved; ' . $reviewsChanged . ' review status(es) updated.';
+                        // Review bookkeeping is independent from native media writes.
+                        // A settings failure must not conceal successful alt-text saves.
+                        if ($reviewsChanged || $saved) {
+                            try {
+                                $this->settings->set('express_alt_text_reviews', $reviewed);
+                            } catch (\Throwable $e) {
+                                error_log('ExpressAltText review settings save failed: ' . $e->getMessage());
+                                $error = 'Alt-text changes may have saved, but review status could not be stored. Check the server error log.';
+                                $failures[] = 'review status';
+                            }
+                        }
+                        $notice = $saved . ' description(s) saved; ' . ($error ? 'review status not confirmed' : $reviewsChanged . ' review status(es) updated') . '.';
                         if ($failures) {
-                            $error = 'Some records could not be saved: ' . implode(', ', $failures) . '. Your unsaved descriptions remain visible where possible.';
+                            $error = 'Some operations failed: ' . implode(', ', $failures) . '. Review the affected records before continuing.';
                         } elseif ($saved || $reviewsChanged) {
                             // Redirect to the same page, avoiding duplicate POST on refresh.
                             $this->flashMessenger()->addSuccessMessage($notice);
@@ -120,7 +131,7 @@ class AdminController extends AbstractActionController
                 }
             } catch (\Throwable $e) {
                 error_log('ExpressAltText batch request failed: ' . $e->getMessage());
-                $error = 'Could not process the save request. Check the Omeka S error log.';
+                $error = 'Could not process the save request. No further changes should be attempted until the error is checked. Details: ' . get_class($e) . ' (see server log).';
             }
         }
 

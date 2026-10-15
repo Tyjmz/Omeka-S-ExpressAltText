@@ -1,4 +1,4 @@
-# ExpressAltText v1.1.0 — development release
+# ExpressAltText v1.1.1 — development release
 
 **Author / Maintainer:** Tyler M. James  
 **Affiliation:** Software engineering student, Cal Poly Humboldt Library Innovations Hub  
@@ -6,6 +6,17 @@
 **Dependencies:** No Common module dependency.
 
 ExpressAltText provides a single scrollable dashboard for reviewing image media and editing Omeka S's **native media alt text**. It uses the Omeka API to save `o:alt_text`, so compatible themes can use that value in public HTML. It is not a replacement for testing rendered pages with assistive technology.
+
+## Changes in 1.1.1 (October 15, 2026)
+
+- Explicitly instantiate `Laminas\Validator\Csrf` (aliased `CsrfValidator`) for `getHash()` and `isValid()`. **Do not use `Laminas\Form\Element\Csrf::isValid()`**: that method does not exist. This change targets the confirmed fatal error at `src/Controller/AdminController.php:46` observed in the Omeka logs. The packaged 1.1.0 source already referenced the validator, so a stale deployed controller or mixed-version installation is also possible; verify the installed file after replacing it.
+- Added **Back to Omeka S Dashboard**, using the Omeka admin route. Existing unsaved-changes browser warning also applies to this link.
+- Isolated review-settings write errors from media API save errors; error feedback now distinguishes review persistence failure. Existing per-media save failure reporting remains.
+- Retained dashboard statistics, search, filters, review checkboxes, and native media alt-text editing.
+
+**Testing status:** PHP lint and ZIP integrity are checked during packaging. This build has **not** been run against a live Omeka S instance. Test on staging, especially saving review status and returning to the dashboard.
+
+**Observed v1.1.0 bug:** Omeka Logs screenshot on October 15, 2026 shows repeated `Call to undefined method Laminas\Form\Element\Csrf::isValid()` at `modules/ExpressAltText/src/Controller/AdminController.php:46`. Another `PermissionDeniedException` for `/api/users/1` was logged separately and is **not proven** to be caused by ExpressAltText. Do not change user permissions to work around it.
 
 ## New in 1.1.0
 
@@ -79,3 +90,4 @@ These observations were reported and documented in screenshots in the developmen
 - **1.0.2:** Batch Save All; three-description save and public rendering subsequently verified.
 - **1.0.3:** Original-image preview preference and full-image links; preview behavior not independently verified.
 - **1.1.0:** Review status, progress, search, filters, modified-record indicators, save safety improvements.
+- **1.1.1:** CSRF validator clarification, separate review-storage error reporting, admin dashboard back link.
