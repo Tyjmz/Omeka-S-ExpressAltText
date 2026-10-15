@@ -1,8 +1,8 @@
 <?php
 namespace ExpressAltText\Controller;
 
-use Laminas\Form\Element\Csrf;
 use Laminas\Mvc\Controller\AbstractActionController;
+use Laminas\Validator\Csrf;
 use Laminas\View\Model\ViewModel;
 use Omeka\Entity\Media;
 
@@ -26,42 +26,72 @@ class AdminController extends AbstractActionController
         if (!$this->auth->getIdentity()) {
             return $this->notFoundAction();
         }
-
-        $csrf = new Csrf('express_csrf');
-        $csrf->setOptions(['csrf_options' => ['timeout' => 3600]]);
+        $csrf = new Csrf(['name' => 'express_alt_text_csrf', 'timeout' => 3600]);
         $request = $this->getRequest();
-        $notice = $request->getQuery('saved') === '1' ? 'Alt text saved.' : null;
-        $error = null;
         $page = max(1, min(100000, (int) $this->params()->fromQuery('page', 1)));
         $filter = (string) $this->params()->fromQuery('filter', 'all');
         if (!in_array($filter, ['all', 'missing', 'filled'], true)) {
             $filter = 'all';
         }
+        $notice = null;
+        $error = null;
+        $failures = [];
+        $submitted = [];
 
         if ($request->isPost()) {
-            $post = $request->getPost();
-            $csrf->setValue($post->get('express_csrf'));
-            $id = filter_var($post->get('media_id'), FILTER_VALIDATE_INT);
-            $alt = (string) $post->get('alt_text', '');
-            if (!$csrf->isValid()) {
-                $error = 'Security token expired. Reload the page and try again.';
-            } elseif (!$id || !($media = $this->em->find(Media::class, $id))
-                || !$this->acl->userIsAllowed($media, 'update')) {
-                $error = 'You do not have permission to edit this media.';
-            } elseif (strlen($alt) > 10000) {
-                $error = 'Alt text exceeds the 10,000-byte limit.';
-            } else {
-                try {
-                    // Use Omeka's API update pipeline, not a direct database flush.
-                    // isPartial keeps all unrelated media fields unchanged.
-                    $this->api->update('media', $id, ['o:alt_text' => $alt], [], ['isPartial' => true]);
-                    return $this->redirect()->toRoute('express-alt-text-dashboard', [], [
-                        'query' => ['page' => $page, 'filter' => $filter, 'saved' => '1'],
-                    ]);
-                } catch (\Throwable $e) {
-                    error_log('ExpressAltText media update failed: ' . $e->getMessage());
-                    $error = 'Could not save alt text. Check the Omeka S error log for details.';
+            try {
+                $post = $request->getPost();
+                $token = (string) $post->get('express_csrf', '');
+                if (!$csrf->isValid($token)) {
+                    $error = 'Security token expired. Reload the page and try again.';
+                } else {
+                    $entries = $post->get('alt_texts', []);
+                    if (!is_array($entries) || count($entries) > 30) {
+                        $error = 'Invalid batch. No changes were saved.';
+                    } else {
+                        $saved = 0;
+                        foreach ($entries as $key => $value) {
+                            $id = filter_var($key, FILTER_VALIDATE_INT);
+                            if (!$id || !is_scalar($value)) {
+                                $failures[] = (string) $key;
+                                continue;
+                            }
+                            $alt = (string) $value;
+                            $submitted[$id] = $alt;
+                            if (strlen($alt) > 10000) {
+                                $failures[] = (string) $id . ' (text too long)';
+                                continue;
+                            }
+                            $media = $this->em->find(Media::class, $id);
+                            if (!$media || !$this->acl->userIsAllowed($media, 'update')) {
+                                $failures[] = (string) $id . ' (not permitted)';
+                                continue;
+                            }
+                            if ((string) $media->getAltText() === $alt) {
+                                continue;
+                            }
+                            try {
+                                $this->api->update('media', $id, ['o:alt_text' => $alt], [], ['isPartial' => true]);
+                                $saved++;
+                                unset($submitted[$id]);
+                            } catch (\Throwable $e) {
+                                error_log('ExpressAltText save failed for media ' . $id . ': ' . $e->getMessage());
+                                $failures[] = (string) $id;
+                            }
+                        }
+                        if ($saved) {
+                            $notice = $saved . ' image description(s) saved.';
+                        }
+                        if ($failures) {
+                            $error = 'Some changes could not be saved (media IDs: ' . implode(', ', $failures) . '). See Omeka S logs for details.';
+                        } elseif (!$saved) {
+                            $notice = 'No changes needed saving.';
+                        }
+                    }
                 }
+            } catch (\Throwable $e) {
+                error_log('ExpressAltText batch request failed: ' . $e->getMessage());
+                $error = 'Could not process the save request. Check the Omeka S error log.';
             }
         }
 
@@ -82,7 +112,6 @@ class AdminController extends AbstractActionController
         $mediaList = array_values(array_filter($results, function ($media) {
             return $this->acl->userIsAllowed($media, 'view');
         }));
-
-        return new ViewModel(compact('mediaList', 'page', 'filter', 'csrf', 'notice', 'error', 'hasNext'));
+        return new ViewModel(compact('mediaList', 'page', 'filter', 'csrf', 'notice', 'error', 'hasNext', 'submitted'));
     }
 }

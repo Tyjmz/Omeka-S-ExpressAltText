@@ -1,37 +1,17 @@
-# ExpressAltText 1.0.0 (initial testing build)
+# ExpressAltText 1.0.2 (development build)
 
-A scrollable Omeka S administrator view for editing native media alt text.
-
-Tyler M. James
-
-
-
-## Install
-
-1. Back up the Omeka S database and files.
-2. Extract the ZIP into `modules/` so the directory is `modules/ExpressAltText/`.
-3. Enable **Express Alt Text** in Admin > Modules.
-4. Open **Express Alt Text** in the admin sidebar.
+**Author / Maintainer:** Tyler M. James  
+**Affiliation:** Software engineering student; Cal Poly Humboldt Library Innovations Hub  
 
 
 
-## Supported scope
+For Omeka S 4.x (target: 4.2.1). Provides a 30-image page with batch editing of native media alt text.
 
-* Targets Omeka S 4.x (requires compatibility testing on your installation).
-* Shows image media records (not each generated thumbnail), 30 per page.
-* Edits the native Media `altText` field. Changes are saved to Omeka's media entity.
-* Supports filtering by empty or nonempty native alt text.
-* Uses CSRF validation and per-media edit permission checks.
+## Installation
+Back up database and files. Test on staging. Replace the existing `modules/ExpressAltText` directory with the extracted package and update the module in Admin > Modules if offered. Do not nest the ExpressAltText folder twice.
 
+## Testing
+First load the dashboard. Edit one non-critical media record and press Save All Changes. Verify the native alt text in the Omeka media editor and the rendered public image HTML. Then test multiple edits.
 
-
-## Important limitations
-
-* **Not yet tested against a running Omeka S instance or Freedom theme.** Test on staging first.
-* Does not audit the public HTML, page-specific alt text, embedded HTML images, theme overrides, or external images.
-* Empty alt text may be intentional and is not automatically an accessibility failure.
-* No reviewed-status tracking yet.
-* Does not create separate alt text for thumbnails and full-size images; those are contexts of one media record.
-* The preview image intentionally has `alt=""` because its adjacent editing controls identify it; this does not affect public pages.
-* ORM filters, controller permissions, routes and media representation URLs need staging validation.
-
+## Limitations
+Not yet tested on a running Omeka S instance. Saving uses Omeka's API manager `update` with `o:alt_text`; individual failures are logged and displayed by media ID. There is no guarantee a theme uses the native alt text in every image context. The module does not handle page-specific overrides, decorative-image review status, or independently verify public HTML. The image preview falls back to the original media URL when a medium thumbnail is unavailable. Do not edit valuable records before confirming save behavior.
