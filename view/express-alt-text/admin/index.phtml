@@ -10,7 +10,7 @@ $esc = function ($s) { return htmlspecialchars((string) $s, ENT_QUOTES | ENT_SUB
 <?php if ($error): ?><p class="express-error" role="alert"><?= $esc($error) ?></p><?php endif; ?>
 <nav class="express-filters" aria-label="Filter images">
 <?php foreach (['all'=>'All images', 'missing'=>'Empty alt text', 'filled'=>'With alt text'] as $key=>$label): ?>
-<a <?= $filter === $key ? 'aria-current="page"' : '' ?> href="<?= $esc($this->url('admin/express-alt-text', [], ['query'=>['filter'=>$key]])) ?>"><?= $esc($label) ?></a>
+<a <?= $filter === $key ? 'aria-current="page"' : '' ?> href="<?= $esc($this->url('express-alt-text-dashboard', [], ['query'=>['filter'=>$key]])) ?>"><?= $esc($label) ?></a>
 <?php endforeach; ?>
 </nav>
 <p class="express-hint">An empty alt attribute may be appropriate for decorative images. This list cannot automatically distinguish decorative images from missing descriptions.</p>
@@ -28,7 +28,7 @@ $thumb = $representation->thumbnailUrl('medium');
 <div class="express-content">
 <h2><?= $esc($representation->displayTitle() ?: 'Untitled image') ?> <small>#<?= (int) $media->getId() ?></small></h2>
 <p><a href="<?= $esc($this->url('admin/id', ['controller'=>'media', 'id'=>$media->getId()])) ?>">Open media record</a></p>
-<form method="post" action="<?= $esc($this->url('admin/express-alt-text', [], ['query'=>['page'=>$page, 'filter'=>$filter]])) ?>">
+<form method="post" action="<?= $esc($this->url('express-alt-text-dashboard', [], ['query'=>['page'=>$page, 'filter'=>$filter]])) ?>">
 <input type="hidden" name="express_csrf" value="<?= $esc($csrf->getValue()) ?>">
 <input type="hidden" name="media_id" value="<?= (int) $media->getId() ?>">
 <label for="alt-<?= (int) $media->getId() ?>">Alt text for image #<?= (int) $media->getId() ?></label>
@@ -41,7 +41,7 @@ $thumb = $representation->thumbnailUrl('medium');
 <?php if (!$mediaList): ?><p>No images found on this page.</p><?php endif; ?>
 </div>
 <nav class="express-pagination" aria-label="Image pages">
-<?php if ($page > 1): ?><a href="<?= $esc($this->url('admin/express-alt-text', [], ['query'=>['page'=>$page-1,'filter'=>$filter]])) ?>">Previous page</a><?php endif; ?>
+<?php if ($page > 1): ?><a href="<?= $esc($this->url('express-alt-text-dashboard', [], ['query'=>['page'=>$page-1,'filter'=>$filter]])) ?>">Previous page</a><?php endif; ?>
 <span>Page <?= (int) $page ?></span>
-<?php if (count($mediaList) === 30): ?><a href="<?= $esc($this->url('admin/express-alt-text', [], ['query'=>['page'=>$page+1,'filter'=>$filter]])) ?>">Next page</a><?php endif; ?>
+<?php if ($hasNext): ?><a href="<?= $esc($this->url('express-alt-text-dashboard', [], ['query'=>['page'=>$page+1,'filter'=>$filter]])) ?>">Next page</a><?php endif; ?>
 </nav>
