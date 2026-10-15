@@ -82,3 +82,59 @@
 @media (max-width:390px) {
   .express-alt-text .express-stats {grid-template-columns:1fr}
 }
+
+/* v1.1.5: enforce compact search button against Omeka admin global form rules. */
+body.express-alt-text form.express-search {
+  display:flex !important;
+  flex-flow:row nowrap !important;
+  justify-content:flex-end;
+  align-items:center;
+  gap:10px;
+  width:100%;
+  max-width:none;
+  margin:0 0 1.25rem;
+  padding:0;
+  background:transparent;
+}
+body.express-alt-text form.express-search input#express-search-field {
+  display:block !important;
+  flex:1 1 auto !important;
+  width:75% !important;
+  min-width:0 !important;
+  max-width:none !important;
+  height:40px !important;
+  padding:8px 12px !important;
+  margin:0 !important;
+  border:1px solid #b9c5d1;
+  border-radius:4px;
+  box-sizing:border-box;
+  font-size:1rem;
+}
+body.express-alt-text form.express-search button.express-search-button {
+  display:inline-flex !important;
+  flex:0 0 112px !important;
+  width:112px !important;
+  min-width:112px !important;
+  max-width:112px !important;
+  height:40px !important;
+  min-height:0 !important;
+  padding:7px 12px !important;
+  margin:0 !important;
+  align-items:center;
+  justify-content:center;
+  border-radius:4px;
+  box-sizing:border-box;
+  font-size:.9rem;
+  line-height:1.2;
+}
+body.express-alt-text form.express-search .express-clear-search {flex:0 0 auto;}
+@media (min-width:900px) {
+  body.express-alt-text form.express-search {margin-left:auto;max-width:760px;}
+}
+@media (max-width:520px) {
+  body.express-alt-text form.express-search {gap:6px;}
+  body.express-alt-text form.express-search button.express-search-button {
+    flex-basis:84px !important;width:84px !important;min-width:84px !important;max-width:84px !important;
+    padding:6px !important;
+  }
+}

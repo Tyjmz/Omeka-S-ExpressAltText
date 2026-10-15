@@ -120,3 +120,12 @@ These observations were reported and documented in screenshots in the developmen
 - **No controller, persistence, CSRF, save, or review-tracking logic was modified in this release.**
 - **Verification:** PHP lint and ZIP integrity checked locally. The interface and save workflow have not been independently tested against a live Omeka S installation for v1.1.4.
 - **Suggested staging test:** Click each count card, confirm the correct filtered records and active highlight, test search + filter together, check keyboard navigation, and save one non-critical description.
+
+## v1.1.5 search layout correction (October 15, 2026)
+
+- Corrects the oversized full-width Search button and nearly invisible search input reported in the v1.1.4 admin screenshot.
+- Applies targeted selectors to overcome Omeka S admin-wide input/button styling. Search is now a wide input with a fixed-width 112px button directly beside it (84px on narrow screens).
+- On wider screens the search row is right-aligned and capped at 760px, matching the approved dashboard mockup.
+- The five clickable statistic cards remain the only filter navigation; no additional filter buttons are introduced.
+- **Scope:** CSS-only change plus version and documentation updates. Controller, saving, review tracking, and routing are unchanged.
+- **Testing:** PHP syntax and ZIP integrity checked locally; browser rendering in Omeka S 4.2.1 still needs verification. After updating, hard-refresh the admin page (Ctrl+Shift+R).
