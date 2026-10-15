@@ -10,6 +10,20 @@ $urlFor = function ($p, $f) use ($search) {
 <h1>Express Alt Text</h1>
 <p class="express-back"><a href="<?= $esc($this->url('admin')) ?>" id="express-back-dashboard">&larr; Back to Omeka S Dashboard</a></p>
 <p>Review image media, edit native Omeka S alt text, and save your changes together. Review status is tracked separately from media metadata.</p>
+<div class="express-controls">
+<form method="get" action="<?= $esc($this->url('express-alt-text-dashboard')) ?>" class="express-search" role="search">
+  <label for="express-search-field" class="express-visually-hidden">Search media ID or existing alt text</label>
+  <input id="express-search-field" name="search" type="search" value="<?= $esc($search) ?>" maxlength="150" placeholder="Search alt text or media ID...">
+  <input type="hidden" name="filter" value="<?= $esc($filter) ?>">
+  <button type="submit" class="express-search-button">Search</button>
+  <?php if ($search !== ''): ?><a class="express-clear-search" href="<?= $esc($this->url('express-alt-text-dashboard', [], ['query' => ['filter' => $filter]])) ?>">Clear search</a><?php endif; ?>
+</form>
+<nav class="express-filters" aria-label="Filter images">
+<?php foreach (['all'=>'All images', 'missing'=>'Empty alt text', 'filled'=>'With alt text', 'unreviewed'=>'Needs human review', 'reviewed'=>'Reviewed'] as $key=>$label): ?>
+<a class="express-filter-button<?= $filter === $key ? ' is-active' : '' ?>" <?= $filter === $key ? 'aria-current="page"' : '' ?> href="<?= $esc($urlFor(1, $key)) ?>"><?= $esc($label) ?></a>
+<?php endforeach; ?>
+</nav>
+</div>
 <?php if ($notice): ?><p class="express-notice" role="status"><?= $esc($notice) ?></p><?php endif; ?>
 <?php if ($error): ?><p class="express-error" role="alert"><?= $esc($error) ?></p><?php endif; ?>
 <section class="express-stats" aria-label="Alt text progress">
@@ -21,18 +35,7 @@ $urlFor = function ($p, $f) use ($search) {
 <?php $percent = $counts['all'] ? round(100 * $counts['reviewed'] / $counts['all']) : 0; ?>
 <div class="express-progress-label">Human review progress: <?= (int) $percent ?>%</div>
 <progress max="100" value="<?= (int) $percent ?>" aria-label="Percentage of images reviewed"><?= (int) $percent ?>%</progress>
-<form method="get" action="<?= $esc($this->url('express-alt-text-dashboard')) ?>" class="express-search" role="search">
-  <label for="express-search-field">Search media ID or existing alt text</label>
-  <input id="express-search-field" name="search" type="search" value="<?= $esc($search) ?>" maxlength="150" placeholder="Media ID or words in alt text">
-  <input type="hidden" name="filter" value="<?= $esc($filter) ?>">
-  <button type="submit">Search</button>
-  <?php if ($search !== ''): ?><a href="<?= $esc($this->url('express-alt-text-dashboard', [], ['query' => ['filter' => $filter]])) ?>">Clear search</a><?php endif; ?>
-</form>
-<nav class="express-filters" aria-label="Filter images">
-<?php foreach (['all'=>'All images', 'missing'=>'Empty alt text', 'filled'=>'With alt text', 'unreviewed'=>'Needs human review', 'reviewed'=>'Reviewed'] as $key=>$label): ?>
-<a <?= $filter === $key ? 'aria-current="page"' : '' ?> href="<?= $esc($urlFor(1, $key)) ?>"><?= $esc($label) ?></a>
-<?php endforeach; ?>
-</nav>
+
 <p class="express-hint">Showing <?= count($mediaList) ?> of <?= (int) $totalMatching ?> matching image records, 30 per page. Empty alt text can be appropriate for decorative images; those need contextual review. Save before changing pages or filters.</p>
 <form id="express-batch-form" method="post" action="<?= $esc($urlFor($page, $filter)) ?>">
 <input type="hidden" name="express_csrf" value="<?= $esc($csrf->getHash()) ?>">

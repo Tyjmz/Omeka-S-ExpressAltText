@@ -101,3 +101,12 @@ These observations were reported and documented in screenshots in the developmen
 - **1.1.1:** CSRF validator clarification, separate review-storage error reporting, admin dashboard back link.
 
 - **1.1.2:** Diagnostic logging for save phases; removed potential flash-messenger service lookup during POST.
+
+## v1.1.3 interface update (October 15, 2026)
+
+- Search field and compact Search button now share one horizontal row, right-aligned on wider screens.
+- Replaces red text filter links with clearly labeled, keyboard-focusable filter buttons (links styled as buttons) and a highlighted active filter.
+- Responsive layout stacks/wraps controls on narrow screens.
+- Search and filter routes, CSRF handling, media API saves, review bookkeeping, and pagination are **unchanged** from v1.1.2.
+- **Testing:** Static PHP lint and archive integrity checked for this release. The user reported that the v1.1.2 save error disappeared; no independent server-side test of v1.1.3 has been performed.
+- **Suggested test:** Search for a media ID, switch each filter, clear the search, verify keyboard focus, and save one non-critical media record on staging.
