@@ -22,6 +22,12 @@ $urlFor = function ($p, $f) use ($search) {
 </div>
 <?php if ($notice): ?><p class="express-notice" role="status"><?= $esc($notice) ?></p><?php endif; ?>
 <?php if ($error): ?><p class="express-error" role="alert"><?= $esc($error) ?></p><?php endif; ?>
+<details class="express-usage-help">
+  <summary>Image usage and thumbnail guidance</summary>
+  <p><strong>Media record:</strong> This editor updates the native alt text for this image media record. Omeka S may display the same media as a large image, a linked thumbnail, or in a carousel. This panel does not scan those public occurrences or classify their accessibility.</p>
+  <p><strong>Linked thumbnails:</strong> A thumbnail used as a link needs an accessible link name. Empty thumbnail alt text may be appropriate when the same link contains meaningful visible text, but can leave an image-only link unnamed.</p>
+  <p><strong>Do not clear the media description to silence a duplicate thumbnail.</strong> That could also remove the description from the full-size image. Inspect the public page and review the link and image together before changing theme-specific thumbnail markup.</p>
+</details>
 <nav class="express-stats" aria-label="Filter images by alt text and review status">
 <?php foreach ([
     'all' => ['Total images', 'all'],
@@ -106,12 +112,7 @@ $isReviewed = trim($currentAlt) !== '' && isset($reviewed[(string) $id]);
   <span class="express-charcount" aria-live="off"><?= mb_strlen($currentAlt) ?> characters</span>
 </div>
 <p class="express-help">Review is a separate administrative status, not a guarantee of WCAG conformance. Editing a description clears its prior review status unless you review it again.</p>
-<details class="express-usage-help">
-  <summary>Image usage and thumbnail guidance</summary>
-  <p><strong>Media record:</strong> This editor updates the native alt text for this image media record. Omeka S may display the same media as a large image, a linked thumbnail, or in a carousel. This panel does not scan those public occurrences or classify their accessibility.</p>
-  <p><strong>Linked thumbnails:</strong> A thumbnail used as a link needs an accessible link name. Empty thumbnail alt text may be appropriate when the same link contains meaningful visible text, but can leave an image-only link unnamed.</p>
-  <p><strong>Do not clear the media description to silence a duplicate thumbnail.</strong> That could also remove the description from the full-size image. Inspect the public page and review the link and image together before changing theme-specific thumbnail markup.</p>
-</details>
+
 </div>
 </article>
 <?php endforeach; ?>

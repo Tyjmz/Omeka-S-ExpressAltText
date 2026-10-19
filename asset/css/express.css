@@ -145,3 +145,6 @@ body.express-alt-text form.express-search .express-clear-search {flex:0 0 auto;}
 .express-usage-help summary:focus-visible,.express-record-links a:focus-visible{outline:3px solid #185c9d;outline-offset:3px}
 .express-usage-help p{margin:.7rem 0 0;line-height:1.55;font-size:.9rem}
 .express-record-links{display:flex;flex-wrap:wrap;gap:.45rem;align-items:center}
+
+/* v1.1.7: single reference guide above the filter cards. */
+body.express-alt-text .express-usage-help{margin:1rem 0 1.1rem}

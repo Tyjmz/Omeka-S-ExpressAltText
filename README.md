@@ -141,3 +141,13 @@ These observations were reported and documented in screenshots in the developmen
 - **Testing:** PHP lint and ZIP integrity checks only. Public URL availability and layout should be tested on a staging Omeka S 4.2.1 installation.
 - **Manual test:** Expand guidance using keyboard; verify public link points to the correct site, compare the full-size image and carousel thumbnail's rendered alt/link accessible names, then confirm saving one non-critical record still works.
 - **Known limitation:** A media record can appear in multiple contexts and sites. This version does not enumerate uses, inspect public HTML, or identify thumbnail duplication automatically.
+
+
+## v1.1.7 consolidated image usage guide (October 19, 2026)
+
+- Moves **Image usage and thumbnail guidance** from every media card to a single collapsible reference panel near the top of the dashboard, above the filter statistics.
+- The reference is collapsed by default, keyboard operable through the native HTML `<details>` / `<summary>` elements, and retains the same wording and cautions as v1.1.6.
+- Removes the repeated guide from individual records to reduce visual clutter and repeated screen-reader content.
+- No changes to native alt-text saving, review tracking, CSRF, search, media URLs, public item links, or the Freedom theme.
+- **Verification:** PHP syntax and ZIP integrity checks performed locally. Browser appearance, keyboard navigation, and saving require testing on an Omeka S 4.2.1 staging installation.
+- **Suggested test:** Open the reference guide with Tab then Enter or Space; confirm it appears only once and media cards retain their editors. Save one noncritical change and confirm the public item image retains the intended alt text.
