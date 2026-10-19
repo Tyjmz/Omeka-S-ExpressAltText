@@ -1,4 +1,4 @@
-# ExpressAltText v1.1.10 — development release
+# ExpressAltText v1.1.11 — development release
 
 **Author / Maintainer:** Tyler M. James  
 **Affiliation:** Software engineering student, Cal Poly Humboldt Library Innovations Hub  
@@ -6,6 +6,19 @@
 **Dependencies:** No Common module dependency.
 
 ExpressAltText provides a single scrollable dashboard for reviewing image media and editing Omeka S's **native media alt text**. It uses the Omeka API to save `o:alt_text`, so compatible themes can use that value in public HTML. It is not a replacement for testing rendered pages with assistive technology.
+
+## v1.1.11 — Native-editor review integrity (October 19, 2026)
+
+- A human approval now stores a SHA-256 fingerprint of the **exact** native Omeka S alt-text value, alongside its review date.
+- Each dashboard request compares stored fingerprints against the current native media text. Edits in Omeka S's own media editor, other modules, or ExpressAltText invalidate the earlier approval if the approved text no longer matches.
+- Invalidation is persisted in the existing Omeka settings record. The previous review date and hash are retained in an invalidated record for potential future history features; invalidated records do **not** count as reviewed.
+- Restoring an externally modified description to its old wording does not silently reinstate approval. An administrator must explicitly review it again.
+- **Migration safety:** Older reviews have no fingerprints, so their accuracy cannot be established. They are conservatively marked unreviewed on the first dashboard load. Their previous dates are retained in the invalidated record. This means the Reviewed count may drop immediately after upgrading; it is intentional and should be communicated before deployment.
+- No database schema changes, theme changes, external API calls, or changes to the native media update method.
+
+**Testing status:** PHP lint and ZIP integrity checks only; Omeka S 4.2.1 integration is not yet verified. Test on a staging copy before upgrading. Back up the database/settings first. After installing, approve a test image in ExpressAltText, edit its alt text in Omeka's native media editor, and refresh the dashboard. It should leave Reviewed and enter Needs Human Review; the counters should update. Restore the original text and verify approval does not automatically return. Reapprove explicitly, save, and verify it persists. Repeat with an empty description. Check PHP logs and verify normal batch saving still works.
+
+**Known limitation:** This checks the stored native media alt text, not every public rendered HTML context. It does not prove the accuracy of a description or WCAG compliance.
 
 ## v1.1.10 — Human review invalidation fix (October 19, 2026)
 

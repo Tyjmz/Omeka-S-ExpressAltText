@@ -148,3 +148,10 @@ body.express-alt-text form.express-search .express-clear-search {flex:0 0 auto;}
 
 /* v1.1.7: single reference guide above the filter cards. */
 body.express-alt-text .express-usage-help{margin:1rem 0 1.1rem}
+
+/* v1.1.8: readable, keyboard-accessible source links and media metadata. */
+.express-media-meta{display:flex;flex-wrap:wrap;gap:.45rem;margin:.35rem 0;color:#505b68;font-size:.84rem}
+.express-media-meta span{border:1px solid #c8d1da;border-radius:3px;padding:.15rem .45rem}
+.express-record-links{display:flex;flex-wrap:wrap;gap:.6rem 1rem;align-items:center;margin:.65rem 0 1rem}
+.express-record-links a{display:inline-block;text-decoration:underline;text-underline-offset:2px}
+.express-no-public{color:#535d66;font-size:.84rem}
