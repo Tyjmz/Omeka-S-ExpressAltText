@@ -1,4 +1,4 @@
-# ExpressAltText v1.1.9 — development release
+# ExpressAltText v1.1.10 — development release
 
 **Author / Maintainer:** Tyler M. James  
 **Affiliation:** Software engineering student, Cal Poly Humboldt Library Innovations Hub  
@@ -6,6 +6,17 @@
 **Dependencies:** No Common module dependency.
 
 ExpressAltText provides a single scrollable dashboard for reviewing image media and editing Omeka S's **native media alt text**. It uses the Omeka API to save `o:alt_text`, so compatible themes can use that value in public HTML. It is not a replacement for testing rendered pages with assistive technology.
+
+## v1.1.10 — Human review invalidation fix (October 19, 2026)
+
+- Editing a reviewed description immediately unchecks **Mark as human reviewed** and updates its visible status.
+- Restoring the original text before saving restores its previous checked state if the review checkbox has not been manually changed.
+- An administrator may explicitly check the box again after editing and verifying the new description.
+- The server requires a separate, explicit approval marker before accepting review status for changed alt text; a stale checked box alone is not sufficient.
+- Review status updates and the Reviewed/Needs review filters reflect the new state after a successful save and reload.
+- Existing native media API saving and source navigation remain unchanged.
+
+**Testing required on Omeka S 4.2.1:** Edit a reviewed item without reapproving and save; verify it leaves the Reviewed filter. Edit and explicitly reapprove; verify it remains reviewed. Restore original text before saving; verify the original review stays checked. Test with JavaScript disabled or a modified POST to ensure a stale checkbox cannot approve changed text. Check error logs and public HTML. The PHP lint and ZIP integrity checks do not establish runtime correctness.
 
 ## v1.1.9 — Clearer navigation labels (October 19, 2026)
 

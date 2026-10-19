@@ -134,6 +134,7 @@ $isReviewed = trim($currentAlt) !== '' && isset($reviewed[(string) $id]);
 <label for="alt-<?= $id ?>">Alt text for image #<?= $id ?></label>
 <textarea id="alt-<?= $id ?>" name="alt_texts[<?= $id ?>]" rows="3" maxlength="10000"><?= $esc($currentAlt) ?></textarea>
 <input type="hidden" name="original_alts[<?= $id ?>]" value="<?= $esc((string) $media->getAltText()) ?>">
+<input type="hidden" class="express-review-confirmed" name="review_confirmed[<?= $id ?>]" value="0">
 <div class="express-actions">
   <label class="express-review"><input type="checkbox" name="reviewed[<?= $id ?>]" value="1" <?= $isReviewed ? 'checked' : '' ?> <?= trim($currentAlt) === '' ? 'disabled' : '' ?>> Mark as human reviewed</label>
   <span class="express-status"><?= $isReviewed ? 'Reviewed' : (trim($currentAlt) === '' ? 'Empty alt text' : 'Needs review') ?></span>
@@ -164,7 +165,7 @@ $isReviewed = trim($currentAlt) !== '' && isset($reviewed[(string) $id]);
   var snapshots = cards.map(function (card) {
     var textarea = card.querySelector('textarea');
     var checkbox = card.querySelector('.express-review input');
-    return {alt: textarea.value, reviewed: checkbox.checked};
+    return {alt: textarea.value, reviewed: checkbox.checked, reviewTouched: false};
   });
   function changed() {
     return cards.filter(function (card, i) {
@@ -174,22 +175,41 @@ $isReviewed = trim($currentAlt) !== '' && isset($reviewed[(string) $id]);
     }).length;
   }
   function refresh() {
-    cards.forEach(function (card) {
+    cards.forEach(function (card, i) {
       var textarea = card.querySelector('textarea');
       var checkbox = card.querySelector('.express-review input');
       var count = card.querySelector('.express-charcount');
+      var state = card.querySelector('.express-status');
       count.textContent = Array.from(textarea.value).length + ' characters';
       checkbox.disabled = !textarea.value.trim();
       if (checkbox.disabled) checkbox.checked = false;
-      card.classList.toggle('express-modified', textarea.value !== snapshots[cards.indexOf(card)].alt || checkbox.checked !== snapshots[cards.indexOf(card)].reviewed);
+      state.textContent = checkbox.checked ? 'Reviewed' : (checkbox.disabled ? 'Empty alt text' : 'Needs review');
+      card.classList.toggle('express-modified', textarea.value !== snapshots[i].alt || checkbox.checked !== snapshots[i].reviewed);
     });
     var n = changed();
     status.textContent = n ? n + ' unsaved record(s) on this page.' : 'No unsaved changes on this page.';
     Array.prototype.forEach.call(form.querySelectorAll('.express-save'), function (button) { button.disabled = n === 0; });
   }
-  cards.forEach(function (card) {
-    card.querySelector('textarea').addEventListener('input', refresh);
-    card.querySelector('.express-review input').addEventListener('change', refresh);
+  cards.forEach(function (card, i) {
+    var textarea = card.querySelector('textarea');
+    var checkbox = card.querySelector('.express-review input');
+    var confirmation = card.querySelector('.express-review-confirmed');
+    textarea.addEventListener('input', function () {
+      confirmation.value = '0';
+      if (textarea.value !== snapshots[i].alt) {
+        checkbox.checked = false;
+      } else if (!snapshots[i].reviewTouched) {
+        // Returning to the exact original description preserves its prior review.
+        checkbox.checked = snapshots[i].reviewed;
+      }
+      refresh();
+    });
+    checkbox.addEventListener('change', function () {
+      snapshots[i].reviewTouched = true;
+      // A changed description can only be re-approved by an explicit user action.
+      confirmation.value = checkbox.checked && textarea.value !== snapshots[i].alt ? '1' : '0';
+      refresh();
+    });
     var img = card.querySelector('img');
     if (img) img.addEventListener('error', function () {
       if (img.dataset.fallbackSrc) {

@@ -73,7 +73,8 @@ class AdminController extends AbstractActionController
                     $entries = $post->get('alt_texts', []);
                     $reviewEntries = $post->get('reviewed', []);
                     $originalEntries = $post->get('original_alts', []);
-                    if (!is_array($entries) || count($entries) > 30 || !is_array($reviewEntries) || !is_array($originalEntries)) {
+                    $reviewConfirmations = $post->get('review_confirmed', []);
+                    if (!is_array($entries) || count($entries) > 30 || !is_array($reviewEntries) || !is_array($originalEntries) || !is_array($reviewConfirmations)) {
                         $error = 'Invalid batch. No changes were saved.';
                     } else {
                         $saved = 0;
@@ -102,12 +103,13 @@ class AdminController extends AbstractActionController
                                 $failures[] = $id . ' (changed by another editor; reload)';
                                 continue;
                             }
-                            if ($current !== $alt) {
+                            $textChanged = $current !== $alt;
+                            $wasReviewed = isset($reviewed[(string) $id]);
+                            if ($textChanged) {
                                 try {
                                     $this->api->update('media', $id, ['o:alt_text' => $alt], [], ['isPartial' => true]);
                                     $saved++;
                                     unset($submitted[$id]);
-                                    unset($reviewed[(string) $id]); // Edited text must be reviewed again.
                                 } catch (\Throwable $e) {
                                     $this->logSaveException($e, 'native media API update for media ' . $id);
                                     $failures[] = (string) $id;
@@ -115,16 +117,23 @@ class AdminController extends AbstractActionController
                                 }
                             }
                             $wantsReview = isset($reviewEntries[$id]) && (string) $reviewEntries[$id] === '1';
-                            // Do not mark empty text reviewed; decorative images need separate classification.
-                            if ($wantsReview && trim($alt) !== '') {
-                                if (!isset($reviewed[(string) $id])) {
+                            // For changed text, an explicit fresh approval is required.
+                            // A stale checked checkbox alone must never restore an old review.
+                            $explicitApproval = isset($reviewConfirmations[$id])
+                                && (string) $reviewConfirmations[$id] === '1';
+                            $newReviewed = $wantsReview && trim($alt) !== ''
+                                && (!$textChanged || $explicitApproval);
+                            if ($newReviewed) {
+                                if (!$wasReviewed || $textChanged) {
                                     $reviewed[(string) $id] = ['date' => gmdate('c')];
-                                    $reviewsChanged++;
                                 }
-                            } elseif (isset($reviewed[(string) $id])) {
+                            } else {
                                 unset($reviewed[(string) $id]);
+                            }
+                            if ($wasReviewed !== $newReviewed || ($textChanged && $newReviewed)) {
                                 $reviewsChanged++;
                             }
+
                         }
                         // Review bookkeeping is independent from native media writes.
                         // A settings failure must not conceal successful alt-text saves.
