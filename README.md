@@ -129,3 +129,15 @@ These observations were reported and documented in screenshots in the developmen
 - The five clickable statistic cards remain the only filter navigation; no additional filter buttons are introduced.
 - **Scope:** CSS-only change plus version and documentation updates. Controller, saving, review tracking, and routing are unchanged.
 - **Testing:** PHP syntax and ZIP integrity checked locally; browser rendering in Omeka S 4.2.1 still needs verification. After updating, hard-refresh the admin page (Ctrl+Shift+R).
+
+
+## v1.1.6 image usage guidance (October 19, 2026)
+
+- Adds a collapsible, keyboard-operable **Image usage and thumbnail guidance** section to each media editor card. This is explanatory guidance, **not an automated classification or scan**.
+- Explains why linked image-only thumbnails may require a meaningful accessible name, while thumbnails accompanied by text in the *same link* may be intentionally empty.
+- Warns against clearing native media alt text to remove redundant thumbnail announcements; the same record may supply the full-size image description.
+- Adds an optional **View public item (new tab)** link when Omeka S can provide a public item URL in the current site context. If unavailable, the link is omitted. The URL is not a verification result.
+- Leaves controller, API writes, CSRF handling, review tracking, search, filtering and batch-save logic unchanged from v1.1.5. No theme files are modified.
+- **Testing:** PHP lint and ZIP integrity checks only. Public URL availability and layout should be tested on a staging Omeka S 4.2.1 installation.
+- **Manual test:** Expand guidance using keyboard; verify public link points to the correct site, compare the full-size image and carousel thumbnail's rendered alt/link accessible names, then confirm saving one non-critical record still works.
+- **Known limitation:** A media record can appear in multiple contexts and sites. This version does not enumerate uses, inspect public HTML, or identify thumbnail duplication automatically.
