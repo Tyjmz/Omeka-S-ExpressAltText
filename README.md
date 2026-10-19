@@ -1,4 +1,4 @@
-# ExpressAltText v1.1.1 — development release
+# ExpressAltText v1.1.8 — development release
 
 **Author / Maintainer:** Tyler M. James  
 **Affiliation:** Software engineering student, Cal Poly Humboldt Library Innovations Hub  
@@ -6,6 +6,16 @@
 **Dependencies:** No Common module dependency.
 
 ExpressAltText provides a single scrollable dashboard for reviewing image media and editing Omeka S's **native media alt text**. It uses the Omeka API to save `o:alt_text`, so compatible themes can use that value in public HTML. It is not a replacement for testing rendered pages with assistive technology.
+
+## v1.1.8 — Source and public item navigation (October 19, 2026)
+
+- Added an **Original media** label and MIME type (when available) to each image record.
+- Added clearly labeled **Open media record**, **View original image**, and **View public item** links. The existing click-to-enlarge preview remains available.
+- Public item links now use each parent item's *associated Omeka S site slug* instead of relying on the admin request's missing site context. If an item belongs to several sites, links may be shown for each. If none is resolvable, the UI explains that a public link is unavailable rather than inventing a URL.
+- Kept the single collapsible image-usage guide at the top of the dashboard. No thumbnail alt text is changed automatically.
+- No changes to the batch-saving controller, native `o:alt_text` writes, review settings, or Freedom theme.
+
+**Testing:** PHP lint and ZIP integrity checks are performed when packaging. The new links have **not** been tested on a running Omeka S installation. On staging, verify media #947, confirm each public item link opens the correct item for its named site, test a media record without an associated public site, and verify native alt-text saving still works. Site-specific public URL generation depends on the Omeka S item representation's `siteUrl()` behavior and should be verified before broad deployment.
 
 ## Changes in 1.1.1 (October 15, 2026)
 
