@@ -1,4 +1,4 @@
-# ExpressAltText v1.1.8 — development release
+# ExpressAltText v1.1.9 — development release
 
 **Author / Maintainer:** Tyler M. James  
 **Affiliation:** Software engineering student, Cal Poly Humboldt Library Innovations Hub  
@@ -6,6 +6,13 @@
 **Dependencies:** No Common module dependency.
 
 ExpressAltText provides a single scrollable dashboard for reviewing image media and editing Omeka S's **native media alt text**. It uses the Omeka API to save `o:alt_text`, so compatible themes can use that value in public HTML. It is not a replacement for testing rendered pages with assistive technology.
+
+## v1.1.9 — Clearer navigation labels (October 19, 2026)
+
+- Renamed the three source links to **View media's admin page**, **View original**, and **View page where item is located**.
+- Kept existing destinations and new-tab behavior unchanged. The two new-tab links include accessible labels announcing this behavior; public item links also include their associated site names in accessible labels to distinguish destinations when multiple sites are available.
+- No changes to media updates, permissions, review tracking, filters, CSS, or the Freedom theme.
+- **Testing needed:** Verify all three destinations, keyboard focus and accessible link names, and links for items published on multiple sites. No live installation testing has been performed for this release.
 
 ## v1.1.8 — Source and public item navigation (October 19, 2026)
 

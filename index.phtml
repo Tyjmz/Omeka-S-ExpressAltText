@@ -124,10 +124,10 @@ $isReviewed = trim($currentAlt) !== '' && isset($reviewed[(string) $id]);
 <h2><?= $esc($representation ? ($representation->displayTitle() ?: 'Untitled image') : 'Image') ?> <small>#<?= $id ?></small></h2>
 <p class="express-media-meta"><span>Original media #<?= $id ?></span><?php if ($mimeType): ?> <span><?= $esc($mimeType) ?></span><?php endif; ?></p>
 <nav class="express-record-links" aria-label="Source and public links for media #<?= $id ?>">
-  <a href="<?= $esc($this->url('admin/id', ['controller'=>'media', 'id'=>$id])) ?>">Open media record</a>
-  <?php if ($original): ?><a href="<?= $esc($original) ?>" target="_blank" rel="noopener noreferrer">View original image (new tab)</a><?php endif; ?>
+  <a href="<?= $esc($this->url('admin/id', ['controller'=>'media', 'id'=>$id])) ?>">View media's admin page</a>
+  <?php if ($original): ?><a href="<?= $esc($original) ?>" target="_blank" rel="noopener noreferrer" aria-label="View original (opens in a new tab)">View original</a><?php endif; ?>
   <?php foreach ($publicItemLinks as $publicUrl => $siteLabel): ?>
-    <a href="<?= $esc($publicUrl) ?>" target="_blank" rel="noopener noreferrer">View public item — <?= $esc($siteLabel) ?> (new tab)</a>
+    <a href="<?= $esc($publicUrl) ?>" target="_blank" rel="noopener noreferrer" aria-label="View page where item is located on <?= $esc($siteLabel) ?> (opens in a new tab)" title="<?= $esc($siteLabel) ?>">View page where item is located</a>
   <?php endforeach; ?>
   <?php if (!$publicItemLinks): ?><span class="express-no-public">No public item link available for this media in its associated sites.</span><?php endif; ?>
 </nav>
