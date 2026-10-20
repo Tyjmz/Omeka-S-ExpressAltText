@@ -155,3 +155,54 @@ body.express-alt-text .express-usage-help{margin:1rem 0 1.1rem}
 .express-record-links{display:flex;flex-wrap:wrap;gap:.6rem 1rem;align-items:center;margin:.65rem 0 1rem}
 .express-record-links a{display:inline-block;text-decoration:underline;text-underline-offset:2px}
 .express-no-public{color:#535d66;font-size:.84rem}
+
+
+/* v1.1.13: consistent high-visibility keyboard focus, scoped to this module. */
+body.express-alt-text { --eat-focus-yellow: #ffdd00; --eat-focus-black: #0b0c0c; }
+body.express-alt-text :is(a, button, input, textarea, select, summary):focus-visible {
+  outline: 3px solid var(--eat-focus-black) !important;
+  outline-offset: 3px !important;
+  box-shadow: 0 0 0 6px var(--eat-focus-yellow) !important;
+}
+/* Links and buttons need an unmistakable focused state, not just an outline. */
+body.express-alt-text :is(a, button, summary):focus-visible {
+  background-color: var(--eat-focus-yellow) !important;
+  color: var(--eat-focus-black) !important;
+  text-decoration-color: currentColor !important;
+}
+/* Do not recolor text entry areas or checkbox interiors; retain their native affordances. */
+body.express-alt-text :is(input, textarea, select):focus-visible {
+  background-color: #fff !important;
+  color: #0b0c0c !important;
+}
+body.express-alt-text input[type="checkbox"]:focus-visible {
+  accent-color: #0b0c0c;
+}
+/* Hidden until keyboard focus: avoid adding another permanent toolbar element. */
+body.express-alt-text .express-skip-link {
+  position: absolute;
+  z-index: 10000;
+  left: 12px;
+  top: 12px;
+  padding: .7rem 1rem;
+  transform: translateY(-250%);
+  background: var(--eat-focus-yellow);
+  color: var(--eat-focus-black);
+  font-weight: 700;
+  text-decoration: underline;
+}
+body.express-alt-text .express-skip-link:focus-visible { transform: none; }
+body.express-alt-text .express-editor-heading { scroll-margin-top: 1rem; }
+body.express-alt-text .express-editor-heading:focus { outline: none; }
+/* Let Windows forced-colors mode supply system focus colors. */
+@media (forced-colors: active) {
+  body.express-alt-text :is(a, button, input, textarea, select, summary):focus-visible {
+    outline: 3px solid Highlight !important;
+    outline-offset: 3px !important;
+    box-shadow: none !important;
+    forced-color-adjust: auto;
+  }
+  body.express-alt-text .express-skip-link:focus-visible {
+    border: 2px solid Highlight;
+  }
+}

@@ -7,6 +7,7 @@ $urlFor = function ($p, $f) use ($search) {
     return $this->url('express-alt-text-dashboard', [], ['query' => ['page' => $p, 'filter' => $f, 'search' => $search]]);
 };
 ?>
+<a class="express-skip-link" href="#express-image-editor">Skip to image editor</a>
 <h1>Express Alt Text</h1>
 <p class="express-back"><a href="<?= $esc($this->url('admin')) ?>" id="express-back-dashboard">&larr; Back to Omeka S Dashboard</a></p>
 <p>Review image media, edit native Omeka S alt text, and save your changes together. Review status is tracked separately from media metadata.</p>
@@ -49,6 +50,7 @@ $urlFor = function ($p, $f) use ($search) {
 <div class="express-progress-label">Human review progress: <?= (int) $percent ?>%</div>
 <progress max="100" value="<?= (int) $percent ?>" aria-label="Percentage of images reviewed"><?= (int) $percent ?>%</progress>
 
+<h2 id="express-image-editor" class="express-editor-heading" tabindex="-1">Image editor</h2>
 <p class="express-hint">Showing <?= count($mediaList) ?> of <?= (int) $totalMatching ?> matching image records, 30 per page. Empty alt text can be appropriate for decorative images; those need contextual review. Save before changing pages or filters.</p>
 <form id="express-batch-form" method="post" action="<?= $esc($urlFor($page, $filter)) ?>">
 <input type="hidden" name="express_csrf" value="<?= $esc($csrf->getHash()) ?>">

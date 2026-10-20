@@ -202,3 +202,13 @@ These observations were reported and documented in screenshots in the developmen
 - No changes to native alt-text saving, review tracking, CSRF, search, media URLs, public item links, or the Freedom theme.
 - **Verification:** PHP syntax and ZIP integrity checks performed locally. Browser appearance, keyboard navigation, and saving require testing on an Omeka S 4.2.1 staging installation.
 - **Suggested test:** Open the reference guide with Tab then Enter or Space; confirm it appears only once and media cards retain their editors. Save one noncritical change and confirm the public item image retains the intended alt text.
+
+
+## v1.1.13 keyboard focus and skip navigation (October 2026)
+
+- Adds a consistent yellow-and-black focus-visible treatment to ExpressAltText's links, buttons, search inputs, alt-text fields, review checkboxes, and disclosure summary. It is scoped to the module admin page and does not change Omeka S global styles.
+- Adds a keyboard-only **Skip to image editor** link at the beginning of the dashboard. It becomes visible when focused and moves to a focusable Image editor heading immediately above the batch editing form.
+- Includes a Windows forced-colors fallback that uses the system Highlight color.
+- Does not change media writes, CSRF handling, review fingerprints, permissions, search/filtering, or public URLs.
+- **Static verification:** PHP syntax checks and ZIP archive validation; runtime browser, keyboard, zoom, screen-reader, and forced-colors testing remain necessary.
+- **Regression tests:** Tab from the start of the dashboard to the skip link and activate it with Enter; verify focus moves to Image editor and the next Tab reaches the Save All button. Check visible focus on statistic links, text fields, review checkboxes, buttons, and the guidance summary. Test at 200% and 400% zoom, Windows high-contrast mode, and with NVDA. Repeat a noncritical save and refresh test.
