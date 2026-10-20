@@ -1,4 +1,4 @@
-# ExpressAltText v1.1.11 — development release
+# ExpressAltText v1.1.12 — development release
 
 **Author / Maintainer:** Tyler M. James  
 **Affiliation:** Software engineering student, Cal Poly Humboldt Library Innovations Hub  
@@ -6,6 +6,16 @@
 **Dependencies:** No Common module dependency.
 
 ExpressAltText provides a single scrollable dashboard for reviewing image media and editing Omeka S's **native media alt text**. It uses the Omeka API to save `o:alt_text`, so compatible themes can use that value in public HTML. It is not a replacement for testing rendered pages with assistive technology.
+
+## v1.1.12 — Save and refresh reliability (October 19, 2026)
+
+- Successful, fully processed batch submissions now use **Post/Redirect/Get**: the controller redirects to a normal GET of the same page, preserving page, filter and search context. Refreshing after a successful save should no longer prompt Chrome to resubmit the previous POST.
+- The save summary is carried in **bounded, display-only URL query parameters**, not via Laminas FlashMessenger (which previously caused a missing-service exception). These parameters are informational, not an authenticated audit trail, and must not be used as evidence of a write without checking the underlying media records.
+- Invalid CSRF submissions, partial failures, and exceptions still render an error on the POST response so the editor can retain submitted text for recovery. **Refreshing after a failed or partial save may still prompt for resubmission; do not confirm it.** Handling those cases with full redirect and secure draft restoration is deferred until it can be tested safely.
+- Existing native media API writes, SHA-256 review fingerprints, invalidation logic, dashboard, and image links are unchanged.
+- The GitHub source archive contains duplicate top-level files as well as canonical module paths. The top-level controller copy has been synchronized, but the **installable ZIP** should include only the standard Omeka module structure inside `ExpressAltText/`.
+
+**Testing required on Omeka S 4.2.1:** Back up and use test media. Save one description, then refresh twice and verify no form-resubmission dialog. Repeat with multiple descriptions and review checkbox changes. Verify Reviewed and Needs Review counts, existing review fingerprints, native editor synchronization, and preservation of search/filter/page. Test invalid CSRF and partial failures only on staging; ensure no false success and do not confirm browser resubmission. Check PHP logs. PHP syntax and ZIP integrity checks are not runtime integration tests.
 
 ## v1.1.11 — Native-editor review integrity (October 19, 2026)
 

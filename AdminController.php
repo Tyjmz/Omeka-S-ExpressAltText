@@ -27,7 +27,7 @@ class AdminController extends AbstractActionController
     private function logSaveException(\Throwable $e, $phase)
     {
         error_log(sprintf(
-            'ExpressAltText v1.1.2 [%s]: %s: %s at %s:%d\n%s',
+            'ExpressAltText v1.1.12 [%s]: %s: %s at %s:%d\n%s',
             $phase,
             get_class($e),
             $e->getMessage(),
@@ -35,6 +35,69 @@ class AdminController extends AbstractActionController
             $e->getLine(),
             $e->getTraceAsString()
         ));
+    }
+
+    /** Exact fingerprint of the approved native alt text (including whitespace). */
+    private function altFingerprint($alt)
+    {
+        return hash('sha256', (string) $alt);
+    }
+
+    /**
+     * Invalidate stale reviews, including legacy records without a fingerprint.
+     * Retain the old date and fingerprint for future audit/history support.
+     * Once invalidated, restoring old text does NOT silently restore approval.
+     */
+    private function reconcileReviews(array &$records)
+    {
+        $ids = [];
+        foreach ($records as $key => $record) {
+            if (is_array($record) && empty($record['invalidated_at'])) {
+                $id = filter_var($key, FILTER_VALIDATE_INT);
+                if ($id && $id > 0) {
+                    $ids[] = (int) $id;
+                }
+            }
+        }
+        if (!$ids) {
+            return false;
+        }
+        $current = [];
+        foreach (array_chunk($ids, 400) as $chunk) {
+            $rows = $this->em->createQueryBuilder()
+                ->select('m.id AS id', 'm.altText AS alt')
+                ->from(Media::class, 'm')
+                ->where('m.id IN (:ids)')
+                ->setParameter('ids', $chunk)
+                ->getQuery()->getArrayResult();
+            foreach ($rows as $row) {
+                $current[(string) $row['id']] = (string) ($row['alt'] ?? '');
+            }
+        }
+        $changed = false;
+        foreach ($ids as $id) {
+            $key = (string) $id;
+            $record = $records[$key];
+            $validHash = isset($record['hash']) && is_string($record['hash'])
+                && strlen($record['hash']) === 64;
+            if (!$validHash || !isset($current[$key]) || trim($current[$key]) === ''
+                || !hash_equals($record['hash'], $this->altFingerprint($current[$key]))) {
+                $records[$key]['invalidated_at'] = gmdate('c');
+                $records[$key]['invalidation_reason'] = !$validHash
+                    ? 'legacy_review_without_fingerprint'
+                    : 'native_alt_text_changed';
+                $changed = true;
+            }
+        }
+        return $changed;
+    }
+
+    private function activeReviews(array $records)
+    {
+        return array_filter($records, function ($record) {
+            return is_array($record) && empty($record['invalidated_at'])
+                && isset($record['hash']) && is_string($record['hash']);
+        });
     }
 
     public function indexAction()
@@ -53,6 +116,18 @@ class AdminController extends AbstractActionController
         $search = trim((string) $this->params()->fromQuery('search', ''));
         $search = mb_substr($search, 0, 150);
         $notice = null;
+        // A successful POST redirects to GET. These query values are display-only;
+        // they never authorize or perform a write. Clamp them to expected batch sizes.
+        if (!$request->isPost() && $this->params()->fromQuery('express_result') === 'saved') {
+            $reportedSaved = filter_var($this->params()->fromQuery('express_saved'), FILTER_VALIDATE_INT);
+            $reportedReviews = filter_var($this->params()->fromQuery('express_reviews'), FILTER_VALIDATE_INT);
+            if ($reportedSaved !== false && $reportedReviews !== false
+                && $reportedSaved >= 0 && $reportedSaved <= 30
+                && $reportedReviews >= 0 && $reportedReviews <= 30) {
+                $notice = $reportedSaved . ' description(s) saved; '
+                    . $reportedReviews . ' review status(es) updated.';
+            }
+        }
         $error = null;
         $failures = [];
         $submitted = [];
@@ -60,6 +135,19 @@ class AdminController extends AbstractActionController
         if (!is_array($reviewed)) {
             $reviewed = [];
         }
+        // Reconcile against the current native media values on every request,
+        // including when changes were made in Omeka's own media editor.
+        try {
+            if ($this->reconcileReviews($reviewed)) {
+                $this->settings->set('express_alt_text_reviews', $reviewed);
+            }
+        } catch (\Throwable $e) {
+            $this->logSaveException($e, 'external review reconciliation');
+            // Fail closed: never show a potentially stale review as approved.
+            $reviewed = [];
+            $error = 'Could not verify existing review approvals. They are hidden until review validation succeeds. Check the PHP error log.';
+        }
+        $activeReviewed = $this->activeReviews($reviewed);
 
         if ($request->isPost()) {
             $savePhase = 'request validation';
@@ -104,7 +192,7 @@ class AdminController extends AbstractActionController
                                 continue;
                             }
                             $textChanged = $current !== $alt;
-                            $wasReviewed = isset($reviewed[(string) $id]);
+                            $wasReviewed = isset($activeReviewed[(string) $id]);
                             if ($textChanged) {
                                 try {
                                     $this->api->update('media', $id, ['o:alt_text' => $alt], [], ['isPartial' => true]);
@@ -125,10 +213,16 @@ class AdminController extends AbstractActionController
                                 && (!$textChanged || $explicitApproval);
                             if ($newReviewed) {
                                 if (!$wasReviewed || $textChanged) {
-                                    $reviewed[(string) $id] = ['date' => gmdate('c')];
+                                    $reviewed[(string) $id] = [
+                                        'date' => gmdate('c'),
+                                        'hash' => $this->altFingerprint($alt),
+                                    ];
                                 }
                             } else {
-                                unset($reviewed[(string) $id]);
+                                if (isset($reviewed[(string) $id]) && empty($reviewed[(string) $id]['invalidated_at'])) {
+                                    $reviewed[(string) $id]['invalidated_at'] = gmdate('c');
+                                    $reviewed[(string) $id]['invalidation_reason'] = 'unreviewed_in_express_alt_text';
+                                }
                             }
                             if ($wasReviewed !== $newReviewed || ($textChanged && $newReviewed)) {
                                 $reviewsChanged++;
@@ -150,9 +244,20 @@ class AdminController extends AbstractActionController
                         $notice = $saved . ' description(s) saved; ' . ($error ? 'review status not confirmed' : $reviewsChanged . ' review status(es) updated') . '.';
                         if ($failures) {
                             $error = 'Some operations failed: ' . implode(', ', $failures) . '. Review the affected records before continuing.';
-                        } elseif ($saved || $reviewsChanged) {
-                            // Show the result in this response: no flash-messenger service lookup.
-                            // Refreshing may ask to resubmit; do not confirm a second submission.
+                        } else {
+                            // Post/Redirect/Get: a successful batch must not remain on a
+                            // POST response. Do not use flashMessenger: that service lookup
+                            // caused an exception on an earlier deployment.
+                            return $this->redirect()->toRoute('express-alt-text-dashboard', [], [
+                                'query' => [
+                                    'page' => $page,
+                                    'filter' => $filter,
+                                    'search' => $search,
+                                    'express_result' => 'saved',
+                                    'express_saved' => $saved,
+                                    'express_reviews' => $reviewsChanged,
+                                ],
+                            ]);
                         }
                     }
                 }
@@ -161,6 +266,9 @@ class AdminController extends AbstractActionController
                 $error = 'Could not process the save request during ' . $savePhase . '. Details: ' . get_class($e) . '. Check the PHP error log for the exact missing service and source line.';
             }
         }
+
+        // Only fingerprint-validated approvals contribute to filters and statistics.
+        $reviewed = $this->activeReviews($reviewed);
 
         // A lightweight scalar query allows accurate counts and filtered pagination.
         // Omeka media display titles may come from linked items and are not searchable here.
