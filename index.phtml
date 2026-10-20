@@ -14,7 +14,7 @@ $urlFor = function ($p, $f) use ($search) {
 <div class="express-controls">
 <form method="get" action="<?= $esc($this->url('express-alt-text-dashboard')) ?>" class="express-search" role="search">
   <label for="express-search-field" class="express-visually-hidden">Search media ID or existing alt text</label>
-  <input id="express-search-field" name="search" type="search" value="<?= $esc($search) ?>" maxlength="150" placeholder="Search alt text or media ID...">
+  <input id="express-search-field" name="search" type="search" value="<?= $esc($search) ?>" maxlength="150">
   <input type="hidden" name="filter" value="<?= $esc($filter) ?>">
   <button type="submit" class="express-search-button">Search</button>
   <?php if ($search !== ''): ?><a class="express-clear-search" href="<?= $esc($this->url('express-alt-text-dashboard', [], ['query' => ['filter' => $filter]])) ?>">Clear search</a><?php endif; ?>
@@ -129,7 +129,10 @@ $isReviewed = trim($currentAlt) !== '' && isset($reviewed[(string) $id]);
   <a href="<?= $esc($this->url('admin/id', ['controller'=>'media', 'id'=>$id])) ?>">View media's admin page</a>
   <?php if ($original): ?><a href="<?= $esc($original) ?>" target="_blank" rel="noopener noreferrer" aria-label="View original (opens in a new tab)">View original</a><?php endif; ?>
   <?php foreach ($publicItemLinks as $publicUrl => $siteLabel): ?>
-    <a href="<?= $esc($publicUrl) ?>" target="_blank" rel="noopener noreferrer" aria-label="View page where item is located on <?= $esc($siteLabel) ?> (opens in a new tab)" title="<?= $esc($siteLabel) ?>">View page where item is located</a>
+    <?php $publicLinkName = count($publicItemLinks) > 1
+        ? 'View page where item is located on ' . (string) $siteLabel . ' (opens in a new tab)'
+        : 'View page where item is located (opens in a new tab)'; ?>
+    <a href="<?= $esc($publicUrl) ?>" target="_blank" rel="noopener noreferrer" aria-label="<?= $esc($publicLinkName) ?>">View page where item is located</a>
   <?php endforeach; ?>
   <?php if (!$publicItemLinks): ?><span class="express-no-public">No public item link available for this media in its associated sites.</span><?php endif; ?>
 </nav>

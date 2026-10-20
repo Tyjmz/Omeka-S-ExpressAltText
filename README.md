@@ -212,3 +212,19 @@ These observations were reported and documented in screenshots in the developmen
 - Does not change media writes, CSRF handling, review fingerprints, permissions, search/filtering, or public URLs.
 - **Static verification:** PHP syntax checks and ZIP archive validation; runtime browser, keyboard, zoom, screen-reader, and forced-colors testing remain necessary.
 - **Regression tests:** Tab from the start of the dashboard to the skip link and activate it with Enter; verify focus moves to Image editor and the next Tab reaches the Save All button. Check visible focus on statistic links, text fields, review checkboxes, buttons, and the guidance summary. Test at 200% and 400% zoom, Windows high-contrast mode, and with NVDA. Repeat a noncritical save and refresh test.
+
+
+## v1.1.14 screen-reader refinements (October 2026)
+
+- Removes the duplicate search-field placeholder. The existing associated label, **Search media ID or existing alt text**, remains intact, as does the search landmark. This reduces repeated speech in NVDA without changing search behavior.
+- Removes the public-item link's redundant HTML `title` attribute. When there is only one public destination, the accessible name is **View page where item is located (opens in a new tab)**. When an item has multiple public site destinations, the site label is retained in each accessible name to distinguish links. The visible link text and URLs are unchanged.
+- Does not modify the saving controller, native media alt text, review fingerprints, search logic, permission handling, or Freedom theme.
+- **User-reported NVDA tests on v1.1.13:** NVDA identified image-preview links, the multiline alt-text editor and its current value, Human Reviewed checkbox and state, Save All Changes button, statistics filter names/counts, and the success confirmation during post-save navigation. These tests do not establish complete screen-reader compatibility or automatic live-region announcements.
+- **Regression tests for v1.1.14:** Use NVDA Speech Viewer to confirm the search field's label is announced without a duplicate placeholder; verify a single-site public link no longer repeats the site title; verify multiple-site links remain distinguishable; test all three link destinations, keyboard focus, saving, and review tracking.
+- **Verification scope:** PHP lint and ZIP integrity checks are static only. Live Omeka S 4.2.1 and NVDA retesting are required.
+
+## AI-assisted development disclosure
+
+ExpressAltText was developed under the direction of Tyler M. James with assistance from OpenAI's ChatGPT for code generation, debugging, interface implementation, and documentation. The project originated from accessibility workflow challenges encountered when managing Omeka S digital collections. Human-directed requirements, installation, testing, issue reporting, and iterative feedback have guided its development.
+
+The module does **not** use AI to generate alt text. AI-assisted code can contain errors, and security, compatibility, and accessibility testing remain ongoing. This disclosure describes the development process, not a claim of independent authorship of every line of code or of completed compliance certification. Copyright ownership and an appropriate open-source license should be confirmed before public release.
