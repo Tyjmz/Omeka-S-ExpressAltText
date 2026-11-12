@@ -1,4 +1,4 @@
-# ExpressAltText v1.1.12 — development release
+# ExpressAltText v1.1.16 — development release
 
 **Author / Maintainer:** Tyler M. James  
 **Affiliation:** Software engineering student, Cal Poly Humboldt Library Innovations Hub  
