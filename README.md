@@ -228,3 +228,25 @@ These observations were reported and documented in screenshots in the developmen
 ExpressAltText was developed under the direction of Tyler M. James with assistance from OpenAI's ChatGPT for code generation, debugging, interface implementation, and documentation. The project originated from accessibility workflow challenges encountered when managing Omeka S digital collections. Human-directed requirements, installation, testing, issue reporting, and iterative feedback have guided its development.
 
 The module does **not** use AI to generate alt text. AI-assisted code can contain errors, and security, compatibility, and accessibility testing remain ongoing. This disclosure describes the development process, not a claim of independent authorship of every line of code or of completed compliance certification. Copyright ownership and an appropriate open-source license should be confirmed before public release.
+
+
+## v1.1.15 — Permissions and security hardening (November 2026)
+
+- Restricts the collection-wide dashboard to authenticated Omeka S **Global Administrators** (`global_admin`). Other users receive a minimal HTTP 403 Access denied response if the controller is reached. This check happens before reading review settings, querying media, or processing POST requests.
+- Existing per-media ACL checks remain in place as defense in depth. No alt-text or review data is migrated or cleared by this update.
+- **Important limitation:** Omeka S may enforce controller ACL authorization before invoking this action. A generic error at that earlier stage cannot be ruled out without a live restricted-role test. If it persists, capture the PHP exception and investigate Omeka's route/controller ACL integration. Do not interpret a generic error as a successful authorization test.
+- This release intentionally does **not** support Editors, Site Administrators, Authors, or Researchers. Role-specific, site-scoped access requires further design and testing.
+- The success message in v1.1.14 is passed through GET parameters and must not be treated as authoritative proof of a successful save. This is an existing limitation, not changed here.
+
+### Regression tests required
+
+1. Back up the Omeka database and module directory; test on staging if possible. Do not uninstall the module.
+2. Global Administrator: open the dashboard, save test alt text, verify native/public alt text and review fingerprints, and refresh without a form-resubmission prompt.
+3. Researcher: visit `/admin/express-alt-text` directly; expect HTTP 403 with an understandable Access denied message. Verify no media or review data appears. If Omeka intercepts the request first, record the actual exception.
+4. Restricted user: attempt a normal POST to the dashboard with a test record; expect HTTP 403 and no changes. Only perform this test on staging.
+5. Repeat tests with Editor and Site Administrator accounts; they are intentionally denied in this version.
+6. Confirm that the existing keyboard focus, skip link, and NVDA announcements remain unchanged for authorized administrators.
+
+### Package provenance
+
+Built from the previously prepared clean v1.1.14 release ZIP, not the repository archive that included duplicate top-level files. The actual installed code on the live site has not been independently verified.

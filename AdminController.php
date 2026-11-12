@@ -102,8 +102,23 @@ class AdminController extends AbstractActionController
 
     public function indexAction()
     {
-        if (!$this->auth->getIdentity()) {
-            return $this->notFoundAction();
+        // Authorize BEFORE accessing settings, querying media, or processing POSTs.
+        // The dashboard is collection-wide; until site-scoped access is implemented,
+        // only Omeka S Global Administrators may use it.
+        $identity = $this->auth->getIdentity();
+        if (!$identity || !method_exists($identity, 'getRole')
+            || $identity->getRole() !== 'global_admin') {
+            $response = $this->getResponse();
+            $response->setStatusCode(403);
+            $response->getHeaders()->addHeaderLine('Content-Type', 'text/html; charset=utf-8');
+            $response->getHeaders()->addHeaderLine('Cache-Control', 'no-store');
+            $response->setContent('<!doctype html><html lang="en"><head><meta charset="utf-8">'
+                . '<meta name="viewport" content="width=device-width,initial-scale=1">'
+                . '<title>Access denied — ExpressAltText</title></head><body><main>'
+                . '<h1>Access denied</h1><p>Your account does not have permission to use '
+                . 'ExpressAltText. Please contact a site administrator if you need access.</p>'
+                . '</main></body></html>');
+            return $response;
         }
         // Validator (not Laminas\Form\Element\Csrf): the element has no isValid() method.
         $csrf = new CsrfValidator(['name' => 'express_alt_text_csrf', 'timeout' => 3600]);
