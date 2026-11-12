@@ -27,7 +27,7 @@ class AdminController extends AbstractActionController
     private function logSaveException(\Throwable $e, $phase)
     {
         error_log(sprintf(
-            'ExpressAltText v1.1.12 [%s]: %s: %s at %s:%d\n%s',
+            'ExpressAltText v1.1.16 [%s]: %s: %s at %s:%d\n%s',
             $phase,
             get_class($e),
             $e->getMessage(),

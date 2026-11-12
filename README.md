@@ -250,3 +250,15 @@ The module does **not** use AI to generate alt text. AI-assisted code can contai
 ### Package provenance
 
 Built from the previously prepared clean v1.1.14 release ZIP, not the repository archive that included duplicate top-level files. The actual installed code on the live site has not been independently verified.
+
+
+## v1.1.16 — Restricted-role access response (November 2026)
+
+- Registers the dashboard controller's `index` privilege for the `global_admin` role in Omeka S's ACL during bootstrap.
+- Adds an early dispatch guard, restricted to the exact `express-alt-text-dashboard` route, to return HTTP 403 and a clear access-denied page before Omeka's controller authorization listener can turn a permission exception into an HTTP 500 response.
+- Retains the controller's independent global-administrator check and per-media update ACL checks.
+- Updates diagnostic log prefix to v1.1.16. No changes to saving, CSRF, review fingerprints, templates, or CSS.
+
+**Required live tests:** (1) Researcher direct GET receives 403 and access-denied text, not 500; (2) Researcher POST to the same route receives 403 and changes no data; (3) Global Administrator dashboard GET and normal save work; (4) review status and alt text persist; (5) check server logs. Test on staging and back up database and module first.
+
+**Scope and limitations:** This version deliberately limits dashboard use to global administrators. The early dispatch guard is route-specific and is intended to run before Omeka's normal controller authorization. Verify this ordering against your installed Omeka S version. A successful 403 alone does not replace a full authorization/security audit.
