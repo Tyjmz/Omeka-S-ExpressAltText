@@ -27,7 +27,7 @@ class AdminController extends AbstractActionController
     private function logSaveException(\Throwable $e, $phase)
     {
         error_log(sprintf(
-            'ExpressAltText v1.1.11 [%s]: %s: %s at %s:%d\n%s',
+            'ExpressAltText v1.1.16 [%s]: %s: %s at %s:%d\n%s',
             $phase,
             get_class($e),
             $e->getMessage(),
@@ -102,8 +102,23 @@ class AdminController extends AbstractActionController
 
     public function indexAction()
     {
-        if (!$this->auth->getIdentity()) {
-            return $this->notFoundAction();
+        // Authorize BEFORE accessing settings, querying media, or processing POSTs.
+        // The dashboard is collection-wide; until site-scoped access is implemented,
+        // only Omeka S Global Administrators may use it.
+        $identity = $this->auth->getIdentity();
+        if (!$identity || !method_exists($identity, 'getRole')
+            || $identity->getRole() !== 'global_admin') {
+            $response = $this->getResponse();
+            $response->setStatusCode(403);
+            $response->getHeaders()->addHeaderLine('Content-Type', 'text/html; charset=utf-8');
+            $response->getHeaders()->addHeaderLine('Cache-Control', 'no-store');
+            $response->setContent('<!doctype html><html lang="en"><head><meta charset="utf-8">'
+                . '<meta name="viewport" content="width=device-width,initial-scale=1">'
+                . '<title>Access denied — ExpressAltText</title></head><body><main>'
+                . '<h1>Access denied</h1><p>Your account does not have permission to use '
+                . 'ExpressAltText. Please contact a site administrator if you need access.</p>'
+                . '</main></body></html>');
+            return $response;
         }
         // Validator (not Laminas\Form\Element\Csrf): the element has no isValid() method.
         $csrf = new CsrfValidator(['name' => 'express_alt_text_csrf', 'timeout' => 3600]);
@@ -116,6 +131,18 @@ class AdminController extends AbstractActionController
         $search = trim((string) $this->params()->fromQuery('search', ''));
         $search = mb_substr($search, 0, 150);
         $notice = null;
+        // A successful POST redirects to GET. These query values are display-only;
+        // they never authorize or perform a write. Clamp them to expected batch sizes.
+        if (!$request->isPost() && $this->params()->fromQuery('express_result') === 'saved') {
+            $reportedSaved = filter_var($this->params()->fromQuery('express_saved'), FILTER_VALIDATE_INT);
+            $reportedReviews = filter_var($this->params()->fromQuery('express_reviews'), FILTER_VALIDATE_INT);
+            if ($reportedSaved !== false && $reportedReviews !== false
+                && $reportedSaved >= 0 && $reportedSaved <= 30
+                && $reportedReviews >= 0 && $reportedReviews <= 30) {
+                $notice = $reportedSaved . ' description(s) saved; '
+                    . $reportedReviews . ' review status(es) updated.';
+            }
+        }
         $error = null;
         $failures = [];
         $submitted = [];
@@ -232,9 +259,20 @@ class AdminController extends AbstractActionController
                         $notice = $saved . ' description(s) saved; ' . ($error ? 'review status not confirmed' : $reviewsChanged . ' review status(es) updated') . '.';
                         if ($failures) {
                             $error = 'Some operations failed: ' . implode(', ', $failures) . '. Review the affected records before continuing.';
-                        } elseif ($saved || $reviewsChanged) {
-                            // Show the result in this response: no flash-messenger service lookup.
-                            // Refreshing may ask to resubmit; do not confirm a second submission.
+                        } else {
+                            // Post/Redirect/Get: a successful batch must not remain on a
+                            // POST response. Do not use flashMessenger: that service lookup
+                            // caused an exception on an earlier deployment.
+                            return $this->redirect()->toRoute('express-alt-text-dashboard', [], [
+                                'query' => [
+                                    'page' => $page,
+                                    'filter' => $filter,
+                                    'search' => $search,
+                                    'express_result' => 'saved',
+                                    'express_saved' => $saved,
+                                    'express_reviews' => $reviewsChanged,
+                                ],
+                            ]);
                         }
                     }
                 }
